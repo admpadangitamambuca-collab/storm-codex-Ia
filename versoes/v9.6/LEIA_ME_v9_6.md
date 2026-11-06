@@ -18,3 +18,9 @@ Arquivo único `index.html`, CSS e JS embutidos: hospedagem estática no Netlify
 - Todos os blocos de script da versão anterior exceto complemento v9.5 têm código byte-a-byte preservado.
 - QA com feed ao vivo e resultado de trade em mercado real **não foram realizados** por este agente. Não há execução de ordens nem backtest retroativo.
 - Operações dependem da página aberta, acesso público a Biquote, tempo real do navegador e de todos os bloqueios de segurança existentes. Se a fonte atrasar ou ficar indisponível, não deve abrir simulação.
+
+## Revisão de QA da v9.6
+- Corrigida porcentagem de acerto: o contador de operações concluídas é numérico, não uma lista.
+- O patrimônio é exibido como saldo (ex.: US$ 100,00, sem sinal de mais); ganho/prejuízo mantém o respectivo sinal.
+- Teste de limites da dupla confluência: Turbo 77/Original 99 bloqueia; 78/64 bloqueia; 78/65 permite sob aprovação técnica; 91/95 permite sob aprovação técnica.
+- Verificação de sintaxe dos 21 blocos JavaScript concluída; teste com OHLC ao vivo e teste visual em navegador real ainda pendentes.

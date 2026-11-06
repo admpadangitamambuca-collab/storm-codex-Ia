@@ -4056,13 +4056,14 @@ function statusText(s){return {take:'TAKE ✓',stop:'STOP ✕',pending:'EM ANDAM
 function paint(){if(!$('stormCopyTrade'))return;
  const rows=loadTrades(),stats=aggregate(rows),eq=equityHistory(rows);
  const setters={stormCopyEquityValue:eq.value,stormCopyEquityProfit:eq.profit,stormCopyEquityHigh:eq.high,stormCopyEquityLow:eq.low};
- for(const [id,n] of Object.entries(setters)){const el=$(id);if(el){el.textContent=money(n);el.classList.toggle('gain',n>0&&id==='stormCopyEquityProfit');el.classList.toggle('loss',n<0&&id==='stormCopyEquityProfit')}}
+ const walletMoney=n=>(n<0?'−':'')+'US$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+ for(const [id,n] of Object.entries(setters)){const el=$(id);if(el){el.textContent=id==='stormCopyEquityProfit'?money(n):walletMoney(n);el.classList.toggle('gain',n>0&&id==='stormCopyEquityProfit');el.classList.toggle('loss',n<0&&id==='stormCopyEquityProfit')}}
  if($('stormCopyEquityDD'))$('stormCopyEquityDD').textContent=eq.maxDD.toFixed(2).replace('.',',')+'%';
  if($('stormCopyEquityClosed'))$('stormCopyEquityClosed').textContent=String(eq.closed);
  const total=$('stormCopyTotal');if(total){total.textContent=money(stats.profit);total.className=stats.profit>0?'gain':stats.profit<0?'loss':''}
  $('stormCopyCounts').textContent=stats.wins+' / '+stats.losses;
  $('stormCopyPending').textContent=String(stats.pending);
- $('stormCopyWinRate').textContent=stats.done.length?((100*stats.wins/stats.done.length).toFixed(1)+'%'):'—';
+ $('stormCopyWinRate').textContent=stats.done?((100*stats.wins/stats.done).toFixed(1)+'%'):'—';
  $('stormCopyAudit').textContent=stats.count+' registro(s) · '+stats.unresolved+' inconclusivo(s)/expirado(s) · TP1 ou stop como encerramento integral';
  const health=$('stormCopyHealth');if(health)health.textContent=!started?'Monitor não iniciado':scanning?'Consultando 4 ativos…':scanError?'Algumas fontes indisponíveis':'Monitor ativo · '+(lastScanAt?fmtTime(lastScanAt):'inicializando');
  const tbody=$('stormCopyRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,80).map(r=>{
