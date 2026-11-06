@@ -1,24 +1,24 @@
-# Storm Códex IA — código-fonte versionado
+# Storm Códex IA — código-fonte completo e versionado
 
-## Versão atual: v9.4 Turbo Equilibrado
+**Versão atual: v9.6 — Tempestade + Copy Trade com dupla confirmação e carteira fictícia.**
 
-Esta versão foi recuperada da Biblioteca do projeto Vórtex Pirata (HTML editável) e publicada preservando o conteúdo do arquivo recuperado.
+- `index.html`: aplicativo autossuficiente, pronto para Netlify.
+- `versoes/v9.6/Storm_Codex_IA_v9_6_NETLIFY.zip`: pacote completo com `index.html` e instruções, para Netlify Drop.
+- `versoes/v9.6/Storm_Codex_IA_v9_6_EDITAVEL.html`: cópia editável, idêntica à raiz.
+- `versoes/v9.6/LEIA_ME_v9_6.md`: documentação e limitações.
+- `versoes/v9.5/`: cópia da v9.5 original com quatro gráficos e score acima de 80.
+- `versoes/v9.4/`: cópia da v9.4 Turbo Equilibrado.
 
-- `index.html`: ponto de entrada do aplicativo web.
-- `versoes/v9.4/Storm_Codex_IA_v9_4_TURBO_EQUILIBRADO_EDITAVEL.html`: cópia fiel do código HTML recuperado.
-- Branch `backup/v9.4-turbo-equilibrado`: referência de recuperação independente da evolução de `main`.
+## Regras para manter a integridade do projeto
 
-## Regras de preservação
+- Preservar o Clássico Precision e o Turbo Equilibrado e seus bloqueios de segurança.
+- A simulação Copy Trade opera com dupla pontuação: Turbo >=78 e motor original >=65, em vela fechada válida.
+- Quatro ativos monitorados com gráfico individual selecionável: XAUUSD, EURUSD, USDJPY e AUDUSD.
+- Banca inicial fictícia de US$100, atualizada por takes e stops encerrados de operações prospectivas.
+- Sem ordens reais ou integração com corretora. Nenhuma promessa de lucro, probabilidade estatística ou acurácia validada.
+- Feed público e navegador aberto necessários para registrar operações. Observações locais não migram automaticamente entre dispositivos.
+- Preservar as versões anteriores na árvore GitHub; criar novas versões sem sobrescrever backups.
 
-1. Nunca alterar a branch de backup da versão 9.4.
-2. Para mudanças futuras, criar uma branch nova e manter a v9.4 como referência de comparação.
-3. Preservar o motor Clássico Precision, os bloqueios de risco e o motor Turbo ao modificar o modo Turbo.
-4. Não afirmar que um feed ao vivo, análise de negociação, funcionamento no navegador ou empacotamento Netlify foi testado quando não foi.
-5. Antes de publicar uma nova versão, verificar se o HTML e todos os recursos necessários estão presentes e validar as principais telas e modos.
-6. Documentar alterações e gerar uma nova cópia editável e um novo pacote de distribuição.
+## Validação efetuada
 
-## Estado da entrega
-
-Publicação e recuperação do arquivo HTML no GitHub **verificadas**. O ZIP original de distribuição da Biblioteca não foi transferido, pois o acesso aos seus bytes foi negado. As verificações funcionais do app e dos feeds reais ainda estão pendentes.
-
-O arquivo HTML está no repositório para edição e download e pode ser usado como base de novos builds após inspeção de dependências.
+Compilação de sintaxe dos scripts; verificação de não modificação dos 20 scripts originais e testes isolados da regra de dupla confirmação, incluindo limites 78 e 65, e evolução da banca. Navegador real e feed Biquote ao vivo não foram validados na entrega.
