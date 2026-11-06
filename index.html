@@ -590,7 +590,7 @@ body.v83-turbo-on #v93ClassicReadout{display:none}
 
 </style>
 </head><body>
-<main class="shell"><header class="header"><div class="logo"><div class="mark storm-codex-mark" aria-hidden="true"><svg class="storm-s-emblem" viewBox="0 0 48 48" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="stormGoldThread" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff1b6"/><stop offset="29%" stop-color="#f4ca65"/><stop offset="60%" stop-color="#c58a29"/><stop offset="83%" stop-color="#ffe08a"/><stop offset="100%" stop-color="#a56e23"/></linearGradient></defs><text x="24" y="35" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="#593714" stroke="#5d3b11" stroke-width="2.5" paint-order="stroke fill">S</text><text x="24" y="34" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="url(#stormGoldThread)" stroke="#ffe6a3" stroke-width=".85" paint-order="stroke fill">S</text><text x="24" y="34" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="none" stroke="#805219" stroke-width=".58" stroke-dasharray="1.1 2.1" opacity=".9">S</text></svg></div><div class="brand"><b>Storm <span class="gold">Códex</span> IA</b><small>VÓRTEX PIRATA  /  TERMINAL DE SINAIS</small></div></div><div class="header-right"><span class="chip">VERSÃO 9.3.1</span><div class="account-menu"><button class="btn tiny account-button" id="accountBtn">◈ Conta</button><div class="account-popup" id="accountPopup" hidden><b>CONTA VERIFICADA</b><div id="accountEmail">—</div><small id="accountPhone">—</small><button id="logoutBtn" class="btn tiny">Sair da conta</button></div></div><span class="badge demo" id="modeBadge"><span class="dot"></span>DEMONSTRAÇÃO</span><button class="btn tiny" id="notifyBtn" title="Ativar alertas de novos sinais">♧ Alertas</button><button class="btn tiny" id="settingsBtn">⚙ Configurar</button></div></header>
+<main class="shell"><header class="header"><div class="logo"><div class="mark storm-codex-mark" aria-hidden="true"><svg class="storm-s-emblem" viewBox="0 0 48 48" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="stormGoldThread" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff1b6"/><stop offset="29%" stop-color="#f4ca65"/><stop offset="60%" stop-color="#c58a29"/><stop offset="83%" stop-color="#ffe08a"/><stop offset="100%" stop-color="#a56e23"/></linearGradient></defs><text x="24" y="35" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="#593714" stroke="#5d3b11" stroke-width="2.5" paint-order="stroke fill">S</text><text x="24" y="34" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="url(#stormGoldThread)" stroke="#ffe6a3" stroke-width=".85" paint-order="stroke fill">S</text><text x="24" y="34" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="37" font-style="italic" font-weight="900" fill="none" stroke="#805219" stroke-width=".58" stroke-dasharray="1.1 2.1" opacity=".9">S</text></svg></div><div class="brand"><b>Storm <span class="gold">Códex</span> IA</b><small>VÓRTEX PIRATA  /  TERMINAL DE SINAIS</small></div></div><div class="header-right"><span class="chip">VERSÃO 9.5</span><div class="account-menu"><button class="btn tiny account-button" id="accountBtn">◈ Conta</button><div class="account-popup" id="accountPopup" hidden><b>CONTA VERIFICADA</b><div id="accountEmail">—</div><small id="accountPhone">—</small><button id="logoutBtn" class="btn tiny">Sair da conta</button></div></div><span class="badge demo" id="modeBadge"><span class="dot"></span>DEMONSTRAÇÃO</span><button class="btn tiny" id="notifyBtn" title="Ativar alertas de novos sinais">♧ Alertas</button><button class="btn tiny" id="settingsBtn">⚙ Configurar</button></div></header>
 <section class="asset-switch"><b>01 / ATIVO</b><select id="assetSelect" aria-label="Selecionar ativo"><option value="XAUUSD">◆ Ouro · XAUUSD</option><option value="BTCUSD">₿ Bitcoin · BTCUSD</option><option value="BTCUSDT">₿ Binance Spot · BTC/USDT</option><option value="EURUSD">€ Euro / Dólar · EURUSD</option><option value="USDJPY">¥ Dólar / Iene · USD/JPY</option><option value="USDCAD">$ Dólar / Canadense · USD/CAD</option><option value="USDCHF">₣ Dólar / Franco · USD/CHF</option><option value="AUDUSD">$ Australiano / Dólar · AUD/USD</option><option value="NASDAQ">▥ Nasdaq 100 · NASDAQ</option></select><button class="btn" id="refreshAll">↻ Atualizar dados</button><button class="btn" id="toggleChart" type="button">▤ Mostrar gráfico</button><small id="lastSync">Última consulta: —</small></section><section class="tf-switch" aria-label="Escolher período de análise"><div class="tf-switch-head"><b>TIMEFRAMES · análise independente em cada vela fechada</b><small>Toque em um período para abrir seu gráfico e sinal</small></div><div class="tf-buttons"><button type="button" class="tf-btn" data-tf="M1">1 minuto <span>M1</span></button><button type="button" class="tf-btn active" data-tf="M5">5 minutos <span>M5</span></button><button type="button" class="tf-btn" data-tf="M15">15 minutos <span>M15</span></button><button type="button" class="tf-btn" data-tf="H1">1 hora <span>H1</span></button></div><div id="tfOverview" class="tf-overview" aria-live="polite"></div></section>
 <section class="v6-insight" aria-label="Análise Precision Engine"><div class="v6-insight-title"><strong>◈ PRECISION ENGINE 7.2</strong><span>Confluência multi-tempo · validação temporal · gestão inteligente</span></div><div class="v6-insight-grid"><div><small>REGIME DO MERCADO</small><strong id="v6Regime">—</strong></div><div><small>ACERTO VALIDADO · HISTÓRICO</small><strong id="v6Probability">—</strong></div><div><small>VALIDAÇÃO TEMPORAL</small><strong id="v6Valid">—</strong></div><div><small>IDADE DA VELA FECHADA</small><strong id="v6Latency">—</strong><small id="v6LatencyNote">Não representa atraso da rede</small></div></div><p id="v6ProbNote" class="v6-disclaimer">Sem dados para estimativa estatística.</p></section>
 <section class="v7-header-grid" aria-label="Confluência e notícias">
@@ -1773,6 +1773,17 @@ function computeSnapshot(candles,mode,extra={}){
  const probability=observed.available?{...observed,sourceType:'observed'}:{...V72().historicalEstimate(stats,legacyAnalysis.side,legacyAnalysis.score),sourceType:'backtest'};
  return {candles,e9,e21,aa,analysis,legacyAnalysis,mode,stats,probability,closedAt:candles.at(-1).t+TF[tf],...extra};
 }
+/* v9.5 read-only: aplica o mesmo motor legado a OHLC fechado de outro ativo/TF. */
+window.Vortex83Bridge.evaluateForCopy=function(candles,asset,tf){
+ const e9=ema(candles,9),e21=ema(candles,21),aa=atr(candles);
+ const context={e9,e21,aa,rsi:V6().rsi(candles),adx:V72().adx(candles),tf,asset,mode:'live',spread:v6Settings.spread,slippage:v6Settings.slippage,commission:v6Settings.commission,lot:v6Settings.lot,multiplier:SETTINGS_DEFAULT[asset]};
+ let result=evaluate(candles,candles.length-1,context);
+ if(!result.preliminary&&['buy','sell'].includes(result.side)){
+  const adaptive=V71().relearn(getHistory(asset,tf),{asset,tf,side:result.side,regime:result.regime,closedAt:candles.at(-1).t+TF[tf],rawScore:result.score});
+  result={...result,score:adaptive.score,adaptive};
+ }
+ return result;
+};
 function emitEveryClosedCandle(asset,tf,snapshot,prior){
  const {candles,mode}=snapshot,ms=TF[tf];if(snapshot.futures)return;
  const lastSeen=prior?.candles.at(-1)?.t??-Infinity;
@@ -2990,7 +3001,7 @@ function init(){const bar=document.querySelector('.header-right'),tf=document.qu
  window.addEventListener('storage',schedule);
  // Fonte/confluência/notícias podem chegar depois da vela principal.
  setInterval(()=>{if(enabled)schedule()},20000);
- window.Vortex83Turbo={refresh:schedule,isEnabled:()=>enabled,structure,pivotScan,sessionOf,outcome,rates,auditMetrics,getLedger,allLedger,current:()=>nowState};
+ window.Vortex83Turbo={refresh:schedule,isEnabled:()=>enabled,structure,planFor,macroRead,pivotScan,sessionOf,outcome,rates,auditMetrics,getLedger,allLedger,current:()=>nowState};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
@@ -3536,4 +3547,132 @@ function init(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 
-</script></body></html>
+</script><style id="storm-v95-css">/* v9.5: apenas novos componentes de UI. */
+#v95CopyBtn{border-color:#b88f4d;color:#ffdc9c;background:#2e2a22;font-weight:850}
+#v95CopyBtn[aria-pressed=true]{background:linear-gradient(120deg,#e3bd79,#99753d);color:#161719;border-color:#f4da9e}
+.v95-card{min-width:0;margin:13px 0 18px;padding:19px;background:linear-gradient(145deg,#142335,#0b1421);border:1px solid #33485f;border-radius:17px;box-shadow:0 14px 33px #0002}
+.v95-head{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:space-between;align-items:center;margin-bottom:11px}
+.v95-head b{font-size:15px;color:#f5d5a4}.v95-head small{color:#afbdd0;font-size:11px}.v95-canvas{height:370px;position:relative;overflow:hidden}
+.v95-canvas canvas{display:block;width:100%;height:100%}.v95-legend{display:flex;flex-wrap:wrap;gap:15px;font-size:10px;color:#abb9ca;margin:9px 0 14px}
+.v95-legend span:first-child{color:#f0c16d}.v95-legend span:nth-child(2){color:#5eaeff}
+#v95CopyTrade{display:none;margin:23px 0 30px}body.v95-copy-mode .shell>:not(.header):not(#v95CopyTrade){display:none!important}body.v95-copy-mode #v95CopyTrade{display:block!important}
+.v95-title{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;margin:18px 0}.v95-title small{font-size:10px;letter-spacing:2px;color:#f0c16d;font-weight:900}
+.v95-title h2{font-size:clamp(28px,4vw,44px);margin:6px 0}.v95-title em{font-style:normal;color:#e9bd69;font-size:12px;letter-spacing:1px}.v95-title p{color:#aec2d4;font-size:12px;line-height:1.7}
+.v95-bar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;border:1px solid #33485c;border-radius:12px;background:#111e2d;padding:14px}.v95-bar>b{margin-right:3px;font-size:11px;color:#d6e1ec}.v95-bar>div{display:flex;flex-wrap:wrap;gap:5px}.v95-bar button{padding:8px 10px}
+.v95-muted{font-size:11px;color:#aabdd0;line-height:1.7;margin:10px 0 2px}
+.v95-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.v95-sum>div{border:1px solid #364b63;background:#0c1a2a;padding:13px;border-radius:12px;min-width:0}
+.v95-sum small{display:block;color:#adc0d2;font-size:9px;letter-spacing:.7px;line-height:1.4}.v95-sum b{display:block;margin-top:8px;color:#eaf3fd;font-size:clamp(17px,2vw,25px)}
+.v95-tablewrap{overflow-x:auto}.v95-tablewrap table{min-width:830px;border-collapse:collapse;width:100%;font-size:10px}.v95-tablewrap th,.v95-tablewrap td{padding:11px 8px;border-bottom:1px solid #2c4054;text-align:left}.v95-tablewrap th{color:#a9c0d5}.v95-tablewrap td{color:#e0e8f1}
+@media(max-width:720px){.v95-card{padding:13px}.v95-canvas{height:310px}.v95-sum{grid-template-columns:repeat(2,minmax(0,1fr))}#v95CopyBtn{font-size:11px}}
+</style>
+<script id="storm-v95-copytrade">/* Storm Códex IA v9.5 — camada visual + observador Copy Trade. Não substitui motores. */
+(()=>{'use strict';
+const ID='storm95-copy-ledger-v2-fixedlots', ASSETS=['EURUSD','XAUUSD','USDJPY','AUDUSD'],TFS=['M1','M5','M15','H1'],MS={M1:60000,M5:300000,M15:900000,H1:3600000};
+const $=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+const fmt=(n,asset)=>Number.isFinite(+n)?Number(n).toFixed(asset==='USDJPY'?3:asset==='XAUUSD'?2:5):'—';
+const when=t=>Number.isFinite(+t)?new Date(+t).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+let chosen='XAUUSD',period='M5',running=false,active=false,ready=false,caches=new Map(),armed=new Map(),trades=[],log=[],lastSync=0,chartRAF=0;let timer=null;
+const lotFor=asset=>asset==='XAUUSD'?0.01:0.04;
+const profitUsd=(trade,exitPrice)=>{const lots=trade.lots??lotFor(trade.asset);const contract=trade.asset==='XAUUSD'?100:100000;const signed=(exitPrice-trade.entry)*(trade.side==='buy'?1:-1);return signed*lots*contract/(trade.asset==='USDJPY'?exitPrice:1);};
+const usd=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const live=()=>Boolean(window.SGV78Data?.load&&window.Vortex91Core?.analyze&&window.Vortex83Turbo?.planFor&&window.Vortex83Bridge?.evaluateForCopy);
+const toCandles=arr=>(Array.isArray(arr)?arr:[]).filter(x=>Number.isFinite(x?.t)&&[x.open,x.high,x.low,x.close].every(v=>Number.isFinite(+v))).sort((a,b)=>a.t-b.t);
+function restore(){try{let o=JSON.parse(localStorage.getItem(ID)||'{}');trades=Array.isArray(o.trades)?o.trades.filter(x=>ASSETS.includes(x.asset)&&TFS.includes(x.tf)).slice(-700):[];armed=new Map(Array.isArray(o.armed)?o.armed:[])}catch{trades=[];armed=new Map()}}
+function save(){try{localStorage.setItem(ID,JSON.stringify({trades:trades.slice(-700),armed:[...armed]}))}catch{}}
+function structureData(asset,tf,candles,meta,all,at){const bridge=window.Vortex83Bridge,vt=window.Vortex83Turbo;
+ const snapshots={};for(const t of TFS){const rec=all[t];if(!rec)continue;const cc=toCandles(rec.candles).filter(x=>x.t+MS[t]<=at);if(cc.length<45)continue;const analysis=bridge.evaluateForCopy(cc,asset,t);snapshots[t]={analysis,candles:cc,mode:'live',closedAt:cc.at(-1).t+MS[t],providerStale:!!rec.providerStale};}
+ const select=snapshots[tf];if(!select||select.candles.length<45)return null;
+ const original=bridge.read?.(),globalState=original?.state||{};
+ const q={asset,tf,snapshots,lagging:!!meta.providerStale,settings:original?.settings||{},state:{mode:'live',candles:select.candles,analysis:select.analysis,closedAt:select.closedAt,source:meta.source,providerStale:!!meta.providerStale,news:globalState.news,newsReady:globalState.newsReady,calendar:globalState.calendar,calendarAt:globalState.calendarAt,calendarStatus:globalState.calendarStatus,goldSpot:asset==='XAUUSD'?globalState.goldSpot:null}};
+ const sc=vt.structure(select.candles,select.analysis),macro=vt.macroRead(q),plan=vt.planFor(q,sc,macro),ctx={data:q,sc,macro,plan};
+ return {q,sc,macro,plan,an:window.Vortex91Core.analyze(q,ctx,window.Vortex91Core.allSelectiveLedger?.()||[])};}
+function settleOne(r,bars){if(!bars.length||!Number.isFinite(r.t)||!Number.isFinite(r.entry)||!Number.isFinite(r.stop)||!Number.isFinite(r.tp))return;
+ const idx=bars.findIndex(c=>c.t===r.t);if(idx<0){r.status='sem_dados';return;}
+ const dir=r.side==='buy'?1:-1;let count=0;
+ for(let i=idx+1;i<bars.length&&count<6;i++){
+  const b=bars[i];if(b.t!==bars[i-1].t+MS[r.tf]){r.status='sem_dados';return;}count++;
+  const hitSL=dir===1?b.low<=r.stop:b.high>=r.stop,hitTP=dir===1?b.high>=r.tp:b.low<=r.tp;
+  if(hitSL&&hitTP){r.status='ambiguo';r.resolvedAt=b.t+MS[r.tf];return;}
+  if(hitSL||hitTP){r.status=hitTP?'take':'stop';r.resolvedAt=b.t+MS[r.tf];r.resultR=hitTP?Math.abs((r.tp-r.entry)/(r.entry-r.stop)):-1;r.resultUsd=profitUsd(r,hitTP?r.tp:r.stop);return;}
+ }
+ if(count>=6){r.status='expirado';r.resultR=0;r.resolvedAt=bars[idx+6]?.t+MS[r.tf];}
+}
+function process(asset,tf,all){let data=all[tf],bars=toCandles(data?.candles).filter(x=>x.t+MS[tf]<=Date.now());if(bars.length<45)return;
+ const k=asset+'|'+tf,last=bars.at(-1),closedAt=last.t+MS[tf],prior=armed.get(k);
+ if(prior===undefined){armed.set(k,closedAt);log.unshift(asset+'/'+tf+': monitoramento iniciado sem sinais retroativos.');return;}
+ // Atualiza operações abertas exclusivamente com velas posteriores, fechadas e consecutivas.
+ for(const r of trades)if(r.asset===asset&&r.tf===tf&&r.status==='aberta')settleOne(r,bars);
+ if(closedAt<=prior)return;
+ armed.set(k,closedAt);
+ // Não cria operações em lacunas, falhas de feed ou dados de fechamento antigo.
+ if(data.providerStale||!data.source||Date.now()-closedAt>Math.max(MS[tf],90000)||Date.now()<closedAt)return;
+ const info=structureData(asset,tf,bars,data,all,closedAt);if(!info)return;
+ const {plan,an}=info;
+ if(!an.ready||an.score<=80||!['buy','sell'].includes(plan.side)||!plan.hasLevels||!plan.ready||!Number.isFinite(plan.entry)||!Number.isFinite(plan.stop)||!Number.isFinite(plan.targets?.[0]))return;
+ const id=[asset,tf,last.t,'v95'].join('|');if(trades.some(x=>x.id===id))return;
+ const entry=plan.entry,stop=plan.stop,tp=plan.targets[0];if((plan.side==='buy'&&!(stop<entry&&tp>entry))||(plan.side==='sell'&&!(stop>entry&&tp<entry)))return;
+ trades.push({id,asset,tf,t:last.t,closedAt,score:an.score,side:plan.side,entry,stop,tp,lots:lotFor(asset),source:data.source,createdAt:Date.now(),status:'aberta',resultR:null,resultUsd:null});
+ log.unshift('Novo sinal '+asset+'/'+tf+' '+(plan.side==='buy'?'COMPRA':'VENDA')+' '+an.score+'/100');
+}
+async function sync(){if(running||!live()||!navigator.onLine)return;running=true;status('Consultando velas reais dos quatro ativos…');try{
+ const staged=new Map(),tasks=[];
+ for(const asset of ASSETS){const group={};staged.set(asset,group);for(const tf of TFS)tasks.push({asset,tf,group});}
+ // Concorrência baixa evita saturar fontes públicas/gratuitas. Sem criar velas fictícias.
+ let cursor=0,ok=0;async function worker(){while(cursor<tasks.length){const {asset,tf,group}=tasks[cursor++];try{
+ const d=(asset==='XAUUSD'&&tf==='H1'&&window.SGV931H1Recovery?.load)?await window.SGV931H1Recovery.load(asset,tf,undefined,window.SGV78Data):await window.SGV78Data.load(asset,tf);
+ if(d?.candles?.length){group[tf]={...d,candles:toCandles(d.candles)};ok++;}
+ }catch(e){group[tf]={error:String(e?.message||e).slice(0,110),candles:[]};}}}
+ await Promise.all([worker(),worker(),worker()]);
+ for(const asset of ASSETS){const g=staged.get(asset);for(const tf of TFS){const k=asset+'|'+tf;if(g[tf]?.candles?.length)caches.set(k,g[tf]);else if(!caches.has(k))caches.set(k,g[tf]||{error:'Fonte indisponível',candles:[]});}}
+ for(const asset of ASSETS){const group=Object.fromEntries(TFS.map(tf=>[tf,caches.get(asset+'|'+tf)]));for(const tf of TFS)try{if(group[tf]?.candles?.length)process(asset,tf,group)}catch(e){log.unshift('Falha de avaliação '+asset+'/'+tf+': '+String(e?.message||e).slice(0,80));}}
+ lastSync=Date.now();save();status(ok+' de 16 fontes/TFs atualizados. '+(ok<16?'Sinais de fontes indisponíveis não são simulados.':'Monitoramento prospectivo ativo.'));
+ }catch(e){status('Falha na atualização: '+String(e?.message||e).slice(0,110));}finally{running=false;paint();}}
+function status(t){const el=$('v95FeedStatus');if(el)el.textContent=t;}
+function stats(){const finished=trades.filter(t=>['take','stop','expirado'].includes(t.status));const val=finished.reduce((s,t)=>s+(Number(t.resultR)||0),0),cash=finished.reduce((s,t)=>s+(Number(t.resultUsd)||0),0);return {cash,finished,wins:finished.filter(t=>t.status==='take').length,losses:finished.filter(t=>t.status==='stop').length,open:trades.filter(t=>t.status==='aberta').length,uncertain:trades.filter(t=>['ambiguo','sem_dados'].includes(t.status)).length,value:val};}
+function sumPanel(){const s=stats();$('v95Sum').innerHTML=`<div><small>SALDO FICTÍCIO EM USD</small><b class="${s.cash>=0?'green':'red'}">${usd(s.cash)}</b><small>${s.value>0?'+':''}${s.value.toFixed(2)} R acumulado</small></div><div><small>TAKES / STOPS</small><b>${s.wins} / ${s.losses}</b></div><div><small>EM ABERTO</small><b>${s.open}</b></div><div><small>CONCLUÍDAS / INCERTAS</small><b>${s.finished.length} / ${s.uncertain}</b></div>`;
+ $('v95Rows').innerHTML=trades.length?trades.slice().reverse().slice(0,100).map(t=>`<tr><td>${safe(when(t.closedAt))}</td><td>${t.asset} · ${t.tf}</td><td>${t.side==='buy'?'COMPRA':'VENDA'}</td><td>${t.score}/100</td><td>${t.lots.toFixed(2)}</td><td>${fmt(t.entry,t.asset)}</td><td>${fmt(t.stop,t.asset)}</td><td>${fmt(t.tp,t.asset)}</td><td class="${t.status==='take'?'green':t.status==='stop'?'red':''}">${({aberta:'ABERTA',take:'TAKE ✓',stop:'STOP ✕',expirado:'EXPIRADA',ambiguo:'AMBÍGUA',sem_dados:'SEM DADOS'})[t.status]||'—'}</td><td>${Number.isFinite(t.resultUsd)?usd(t.resultUsd):'—'} <small>${Number.isFinite(t.resultR)?(t.resultR>0?'+':'')+t.resultR.toFixed(2)+' R':''}</small></td></tr>`).join(''):'<tr><td colspan="10">Nenhuma operação fictícia registrada. A observação começa após a primeira atualização e exige Turbo aprovado com confluência superior a 80/100.</td></tr>';
+}
+function ema(arr,p){let k=2/(p+1),prev=null;return arr.map((x,i)=>{const v=+x.close;prev=prev===null?v:prev+(v-prev)*k;return i>=p-1?prev:null})}
+function plot(canvas,bars,asset,tf,levels=[],marks=[]){if(!canvas)return;const ctx=canvas.getContext('2d');if(!ctx)return;const rect=canvas.getBoundingClientRect();if(rect.width<80)return;const dpr=Math.min(2,window.devicePixelRatio||1),w=Math.round(rect.width),h=Math.max(250,Math.round(rect.height));canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.clearRect(0,0,w,h);ctx.fillStyle='#0b1420';ctx.fillRect(0,0,w,h);const all=toCandles(bars),draw=all.slice(-70);if(draw.length<3){ctx.fillStyle='#a9bdcf';ctx.font='13px sans-serif';ctx.fillText('Aguardando candles OHLC válidos…',16,40);return;}
+ let values=draw.flatMap(c=>[c.high,c.low]);for(const p of levels)if(Number.isFinite(+p.price)&&Math.abs(p.price-draw.at(-1).close)<Math.abs(draw.at(-1).close)*.15)values.push(p.price);
+ const low=Math.min(...values),high=Math.max(...values),pad=Math.max((high-low)*.14,Math.abs(high)*.00005),min=low-pad,max=high+pad,left=14,right=82,top=16,bottom=30,pw=w-left-right,ph=h-top-bottom;
+ const y=v=>top+(max-v)/(max-min)*ph,x=i=>left+(i+.5)*pw/draw.length;
+ ctx.font='10px system-ui';ctx.textBaseline='middle';for(let i=0;i<5;i++){let yy=top+i*ph/4,price=max-(max-min)*i/4;ctx.strokeStyle='#26384a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right+8,yy);ctx.stroke();ctx.fillStyle='#a3b5c7';ctx.fillText(fmt(price,asset),w-right+12,yy)}
+ const wC=Math.max(2,Math.min(10,pw/draw.length*.55));draw.forEach((c,i)=>{const cx=x(i),r=c.close>=c.open;ctx.strokeStyle=r?'#54ddb0':'#f47b86';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(cx,y(c.high));ctx.lineTo(cx,y(c.low));ctx.stroke();const y1=y(Math.max(c.open,c.close)),y2=y(Math.min(c.open,c.close));ctx.fillRect(cx-wC/2,y1,wC,Math.max(1.7,y2-y1));});
+ const e9=ema(all,9).slice(-draw.length),e21=ema(all,21).slice(-draw.length);for(const [vals,col] of [[e9,'#f0c16d'],[e21,'#5eaeff']]){ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.beginPath();let started=false;vals.forEach((v,i)=>{if(!Number.isFinite(v))return;started?ctx.lineTo(x(i),y(v)):ctx.moveTo(x(i),y(v));started=true;});ctx.stroke();}
+ const colors={entry:'#dcb76f',stop:'#ff6f85',tp:'#46dfa8'};for(const p of levels){if(!Number.isFinite(+p.price)||p.price<min||p.price>max)continue;const yy=y(p.price);ctx.setLineDash([7,5]);ctx.strokeStyle=colors[p.kind]||'#a89cf5';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right+7,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.font='bold 10px system-ui';ctx.fillText(p.name+' '+fmt(p.price,asset),Math.max(left+2,w-right-120),Math.max(top+8,yy-8));}
+ for(const m of marks){const idx=draw.findIndex(c=>c.t===m.t);if(idx<0)continue;const cx=x(idx),cy=y(m.entry);ctx.fillStyle=m.status==='take'?'#47dca4':m.status==='stop'?'#ff6379':'#f4ca75';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#101620';ctx.stroke();}
+ ctx.textAlign='left';ctx.fillStyle='#a6b7c9';ctx.font='10px system-ui';for(const j of [0,Math.floor(draw.length/2),draw.length-1])ctx.fillText(when(draw[j].t+MS[tf]).slice(0,11),x(j),h-12);
+}
+function paint(){if(!ready)return;sumPanel();const data=caches.get(chosen+'|'+period),bars=data?.candles||[];const current=trades.filter(t=>t.asset===chosen&&t.tf===period).slice(-18);const latest=current.at(-1);const levels=latest?[{kind:'entry',name:'ENTRADA',price:latest.entry},{kind:'stop',name:'STOP',price:latest.stop},{kind:'tp',name:'TAKE',price:latest.tp}]:[];
+ $('v95ChartMeta').textContent=chosen+' / '+period+' · '+(data?.source||data?.error||'Aguardando fonte')+' · '+(lastSync?'Atualizado '+when(lastSync):'sem consulta');
+ plot($('v95CopyCanvas'),bars,chosen,period,levels,current);
+ if(window.Vortex83Turbo?.isEnabled?.()){const ctx=window.Vortex83Turbo?.current?.();const state=ctx?.data?.state;const plan=ctx?.plan;const asset=ctx?.data?.asset||$('assetSelect')?.value||'XAUUSD',tf=ctx?.data?.tf||document.querySelector('.tf-btn.active')?.dataset.tf||'M5';const ec=state?.candles||[];
+ const lv=plan?.hasLevels?[{name:'ENTRADA',price:plan.entry,kind:'entry'},{name:'STOP',price:plan.stop,kind:'stop'},...(plan.targets||[]).slice(0,3).map((p,i)=>({name:'TP'+(i+1),price:p,kind:'tp'}))]:[];
+ plot($('v95TurboCanvas'),ec,asset,tf,lv,window.Vortex91Core?.getSelectiveLedger?.(asset,tf)||[]);
+ $('v95TurboMeta').textContent=asset+' / '+tf+' · '+(state?.source||'aguardando fonte')+' · níveis do Turbo '+(plan?.ready?'aprovado':'em análise');
+ }}
+function scaffold(){if(ready)return;const header=document.querySelector('.shell>.header'),nav=document.querySelector('#v90Turbo');if(!header||!nav)return;
+ const btn=document.createElement('button');btn.id='v95CopyBtn';btn.type='button';btn.className='btn tiny';btn.textContent='◈ Copy Trade';btn.setAttribute('aria-pressed','false');btn.title='Simulação prospectiva; sem ordens reais';(document.getElementById('v83TurboBtn')||header.querySelector('.header-right button'))?.insertAdjacentElement('afterend',btn);
+ const turbo=document.createElement('section');turbo.id='v95TurboChart';turbo.className='v95-card';turbo.innerHTML='<div class="v95-head"><b>03 / Gráfico técnico do Turbo</b><small id="v95TurboMeta">Aguardando velas fechadas</small></div><div class="v95-legend"><span>◼ EMA 9</span><span>◼ EMA 21</span><span>━━ Entrada / Stop / TP 1–3</span><span>● Sinais seletivos observados</span></div><div class="v95-canvas"><canvas id="v95TurboCanvas" aria-label="Candles, EMAs e níveis do Turbo"></canvas></div>';
+ const plan=$('v92TurboPlan');if(plan)plan.insertAdjacentElement('afterend',turbo);
+ const section=document.createElement('section');section.id='v95CopyTrade';section.innerHTML=`<div class="v95-title"><div><small>STORM CÓDEX IA · v9.5</small><h2>Copy Trade <em>SIMULADO</em></h2><p>Monitor independente dos motores · EURUSD, XAUUSD, USDJPY e AUDUSD · todos os períodos M1/M5/M15/H1. <b>Volume fixo: ouro 0,01 lote; demais pares 0,04 lote.</b></p></div><button type="button" class="btn tiny" id="v95Back">← Voltar ao painel</button></div>
+ <div class="v95-bar"><b>Escolha o gráfico</b><div id="v95Assets"></div><div id="v95TFs"></div><button id="v95Refresh" class="btn tiny" type="button">↻ Consultar agora</button></div>
+ <section class="v95-card"><div class="v95-head"><b>Gráfico · EMA 9/21 · marcadores dos trades</b><small id="v95ChartMeta">Aguardando consulta</small></div><div class="v95-legend"><span>◼ EMA 9</span><span>◼ EMA 21</span><span>━━ Entrada / Stop / Take</span><span>● Operação fictícia</span></div><div class="v95-canvas"><canvas id="v95CopyCanvas" aria-label="Candles de mercado e operações fictícias"></canvas></div><p id="v95FeedStatus" class="v95-muted">Iniciando consulta…</p></section>
+ <section class="v95-card"><div class="v95-head"><b>Resultado acumulado do Copy Trade fictício</b><small>Sinais Turbo aprovados &gt;80/100 · XAU 0,01 · FOREX 0,04 · saída TP1</small></div><div id="v95Sum" class="v95-sum"></div><p class="v95-muted">Saldo em USD calculado com <b>lotes fixos</b> (XAUUSD 0,01 e EURUSD/USDJPY/AUDUSD 0,04), contrato de referência de 100 onças por lote de ouro e 100.000 unidades por lote de Forex. USDJPY convertido em USD pela cotação de saída. Resultado em R também exibido. Sem spread, slippage, comissões ou impostos; resultado teórico depende das especificações da corretora e não representa execução real.</p></section>
+ <section class="v95-card"><div class="v95-head"><b>Histórico de operações fictícias</b><small>Observações prospectivas · armazenamento neste navegador</small></div><div class="v95-tablewrap"><table><thead><tr><th>Fechamento BRT</th><th>Ativo / TF</th><th>Direção</th><th>Confluência</th><th>Lote</th><th>Entrada</th><th>Stop</th><th>Take 1</th><th>Resultado</th><th>Resultado em USD / R</th></tr></thead><tbody id="v95Rows"></tbody></table></div><p class="v95-muted">Uma operação só é aberta após um novo fechamento observado com dados reais e todos os filtros originais do Turbo aprovados. Velas faltantes ou TP/SL atingidos na mesma vela ficam inconclusivos e não entram como ganho. O navegador precisa permanecer ativo para monitoramento; não há servidor em segundo plano.</p></section>`;
+ header.insertAdjacentElement('afterend',section);
+ const a=$('v95Assets'),t=$('v95TFs');for(const asset of ASSETS){const b=document.createElement('button');b.className='btn tiny';b.textContent=asset;b.dataset.v95Asset=asset;a.append(b);}for(const tf of TFS){const b=document.createElement('button');b.className='btn tiny';b.textContent=tf;b.dataset.v95Tf=tf;t.append(b);}
+ const toggle=on=>{active=!!on;document.body.classList.toggle('v95-copy-mode',active);btn.setAttribute('aria-pressed',String(active));if(active){if(!lastSync)sync();}paint()};
+ btn.addEventListener('click',()=>toggle(!active));$('v95Back').addEventListener('click',()=>toggle(false));$('v83TurboBtn')?.addEventListener('click',()=>{if(active)toggle(false)},true);
+ $('v95Refresh').addEventListener('click',()=>sync());section.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.v95Asset){chosen=b.dataset.v95Asset;paint()}if(b.dataset.v95Tf){period=b.dataset.v95Tf;paint()}});
+ new ResizeObserver(()=>{cancelAnimationFrame(chartRAF);chartRAF=requestAnimationFrame(paint)}).observe(section);new ResizeObserver(()=>{cancelAnimationFrame(chartRAF);chartRAF=requestAnimationFrame(paint)}).observe(turbo);
+ ready=true;paint();window.addEventListener('vortex83-data',()=>{if(!document.hidden)requestAnimationFrame(paint)});window.addEventListener('resize',paint);
+ timer=setInterval(()=>{if(!document.hidden)sync();else if(active)status('Navegador em segundo plano: monitoramento pode ser suspenso.')},60000);
+ if(navigator.onLine)sync();else status('Sem internet. Nenhuma operação fictícia será criada.');
+}
+restore();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scaffold,{once:true});else scaffold();
+})();
+</script>
+</body></html>
