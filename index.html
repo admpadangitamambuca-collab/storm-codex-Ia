@@ -3872,7 +3872,7 @@ const maxTradeCount=400;
 const dataStore=new Map(); // cache individual e isolado por ativo e timeframe
 const armedAt=new Map(); // primeiro fechamento observado arma o monitor, nunca cria trade retroativo
 let open=false,started=false,scanning=false,tfShown='M5',assetShown='XAUUSD',lastScanAt=0,scanError='',renderFrame=0;
-const COPY_MIN_TURBO=78, COPY_MIN_CLASSIC=65, INITIAL_EQUITY=100;
+const COPY_TURBO_THRESHOLD_EXCLUSIVE=83, INITIAL_EQUITY=100; // Score deve ser >83; 83 nao entra.
 function storageKey(){return STORAGE_PREFIX+String(window.SGUserHistoryKey||'usuario_local')}
 function loadTrades(){try{return (JSON.parse(localStorage.getItem(storageKey())||'[]')||[])
  .filter(r=>r&&ASSETS.includes(r.asset)&&FRAMES[r.tf]&&r.origin==='observed_copy_v95'&&KNOWN_LOTS[r.asset]?.includes(r.lot)&&ok(r.entry)&&ok(r.stop)&&ok(r.tp)&&ok(r.t)).slice(0,maxTradeCount)}catch{return []}}
@@ -3939,14 +3939,13 @@ function computeForCopy(asset,tf,bar){
  const levels=p?.hasLevels&&ok(p.entry)&&ok(p.stop)&&ok(p.targets?.[0]);
  const originalScore=Number(bar?.analysis?.score);
  const turboScore=Number(analysis?.score);
- const originalValid=Number.isFinite(originalScore)&&originalScore>=COPY_MIN_CLASSIC;
- const turboValid=Number.isFinite(turboScore)&&turboScore>=COPY_MIN_TURBO;
- const valid=Boolean(analysis?.ready&&turboValid&&originalValid&&levels&&quality?.fresh&&
+ const turboValid=Number.isFinite(turboScore)&&turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE;
+ const valid=Boolean(analysis?.ready&&turboValid&&levels&&quality?.fresh&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
- reason:valid?'Dupla confirmação aprovada (Turbo ≥78, Clássico ≥65)':
-  (!turboValid?'Turbo abaixo de 78/100':!originalValid?'Motor original abaixo de 65/100 ou indisponível':
+ reason:valid?'Turbo acima de 83/100 e filtros essenciais aprovados':
+  (!turboValid?'Confluência Turbo precisa ser superior a 83/100':
    analysis?.brakes?.[0]||'Bloqueios de integridade/risco ou plano técnico sem aprovação')};
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
@@ -3994,7 +3993,7 @@ function observe(asset,tf,bar){const id=asset+'|'+tf;
  const rec={id:unique,asset,tf,t:bar.candles.at(-1).t,closedAt:bar.closedAt,
   recordedAt:Date.now(),side,score:evaluated.score,entry:p.entry,stop:p.stop,tp:p.targets[0],
   lot:LOTS[asset],contractSize:CONTRACT[asset],classicScore:evaluated.classicScore,status:'pending',seenBars:0,
-  source:bar.source,origin:'observed_copy_v95',version:'9.6',strategy:evaluated.analysis.trigger?.kind||'Turbo 9.4'};
+  source:bar.source,origin:'observed_copy_v95',version:'copy-turbo-83-2026-11-07',strategy:evaluated.analysis.trigger?.kind||'Turbo Seletivo'};
  rows.unshift(rec);saveTrades(rows);return true;
 }
 function due(bar,tf,force){const now=Date.now();if(force)return !bar||now-bar.fetchedAt>=12000;
@@ -4067,8 +4066,8 @@ function chartPanelHTML(){return `<section id="stormTurboChart" aria-label="Grá
  <canvas id="stormTurboCanvas" class="storm-v95-canvas" aria-label="Gráfico técnico de velas do Turbo com EMA9, EMA21, entrada, stop e take"></canvas>
  <p class="storm-v95-foot">Mesma seleção de ativo e período do Turbo. Marcações são níveis teóricos do motor, não ordens executadas. Velas futuras não são projetadas.</p></section>`}
 function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulador Copy Trade, operações fictícias">
- <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Dupla confirmação</span></h2>
- <p>Entradas fictícias só quando <b>Turbo ≥ 78/100</b> <strong style="color:#ffd27e">E</strong> <b>motor original ≥ 65/100</b>, além dos bloqueios essenciais de segurança. Valores superiores são aceitos. Sem ordens reais. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Operações anteriores mantêm seu lote original.</p></div>
+ <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Turbo &gt;83</span></h2>
+ <p>Registro de <b>toda oportunidade elegível com Turbo &gt;83/100</b> (84–100 em pontuação inteira), após vela fechada e aprovação dos filtros de risco, macro, qualidade e plano. <b>Não exige mais score original ≥65</b>, embora a análise original continue fornecendo contexto e níveis técnicos. Sem ordens reais. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Operações anteriores mantêm seu lote original.</p></div>
  <div class="storm-v95-action-row"><span id="stormCopyHealth" class="storm-v95-chip">Monitor não iniciado</span><button type="button" class="storm-v95-btn" id="stormCopyRefresh">↻ Consultar OHLC</button><button type="button" class="storm-v95-btn" id="stormCopyExport">↓ Exportar operações</button></div></header>
  <div class="storm-v95-stats"><div class="storm-v95-stat"><small>SALDO ACUMULADO FICTÍCIO</small><b id="stormCopyTotal">US$ 0,00</b></div>
  <div class="storm-v95-stat"><small>TAKES / STOPS</small><b id="stormCopyCounts">0 / 0</b></div>
@@ -4275,7 +4274,7 @@ function paint(){if(!$('stormCopyTrade'))return;
    <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Math.round(r.score)}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
    <td>${price(r.entry,r.asset)}</td><td>${price(r.tp,r.asset)}</td><td>${price(r.stop,r.asset)}</td>
    <td class="${cls}">${statusText(r.status)}</td><td class="${cls}">${ok(r.pnlUsd)?money(r.pnlUsd):'—'}</td></tr>`}).join(''):
-  '<tr><td colspan="10">Sem operações novas após dupla confirmação Turbo ≥78 e Original ≥65.</td></tr>';
+  '<tr><td colspan="10">Sem oportunidades elegíveis com Turbo &gt;83/100 e filtros de segurança aprovados desde o início do monitor.</td></tr>';
  requestAnimationFrame(drawAll);
 }
 function drawAll(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;drawTurbo();if(open)drawCopy()})}
@@ -4285,7 +4284,7 @@ function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','t
  const link=document.createElement('a'),url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
  link.href=url;link.download='STORM_CODEX_v9_6_COPY_TRADE_'+new Date().toISOString().slice(0,10)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-window.StormCopyTrade95={version:'9.6',getTrades:loadTrades,getStatus:()=>({started,scanning,scanError,lastScanAt}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
+window.StormCopyTrade95={version:'copy-turbo-83-2026-11-07',getTrades:loadTrades,getStatus:()=>({started,scanning,scanError,lastScanAt,scoreThreshold:'>83',simulatedOnly:true}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
  // Funções puras para auditoria e testes. Não executam ordens.
  lotPnl,settleOne,aggregate,scanNow:()=>{if(!started)started=true;return scan(true)}};
 window.StormCopyTrade96=window.StormCopyTrade95;
