@@ -3940,13 +3940,16 @@ function computeForCopy(asset,tf,bar){
  const originalScore=Number(bar?.analysis?.score);
  const turboScore=Number(analysis?.score);
  const turboValid=Number.isFinite(turboScore)&&turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE;
- const valid=Boolean(analysis?.ready&&turboValid&&levels&&quality?.fresh&&
+ // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
+ // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
+ // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
+ const valid=Boolean(turboValid&&levels&&quality?.fresh&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
- reason:valid?'Turbo acima de 83/100 e filtros essenciais aprovados':
+ reason:valid?'Confluência Turbo >83/100: operação simulada elegível':
   (!turboValid?'Confluência Turbo precisa ser superior a 83/100':
-   analysis?.brakes?.[0]||'Bloqueios de integridade/risco ou plano técnico sem aprovação')};
+   'Falta OHLC recente, direção ou níveis válidos para simular entrada, stop e alvo')};
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
@@ -3993,7 +3996,7 @@ function observe(asset,tf,bar){const id=asset+'|'+tf;
  const rec={id:unique,asset,tf,t:bar.candles.at(-1).t,closedAt:bar.closedAt,
   recordedAt:Date.now(),side,score:evaluated.score,entry:p.entry,stop:p.stop,tp:p.targets[0],
   lot:LOTS[asset],contractSize:CONTRACT[asset],classicScore:evaluated.classicScore,status:'pending',seenBars:0,
-  source:bar.source,origin:'observed_copy_v95',version:'copy-turbo-83-2026-11-07',strategy:evaluated.analysis.trigger?.kind||'Turbo Seletivo'};
+  source:bar.source,origin:'observed_copy_v95',version:'copy-turbo-83-2026-11-07',strategy:'confluencia_turbo_gt83',triggerInfo:evaluated.analysis.trigger?.kind||'nao_identificado'};
  rows.unshift(rec);saveTrades(rows);return true;
 }
 function due(bar,tf,force){const now=Date.now();if(force)return !bar||now-bar.fetchedAt>=12000;
@@ -4067,7 +4070,7 @@ function chartPanelHTML(){return `<section id="stormTurboChart" aria-label="Grá
  <p class="storm-v95-foot">Mesma seleção de ativo e período do Turbo. Marcações são níveis teóricos do motor, não ordens executadas. Velas futuras não são projetadas.</p></section>`}
 function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulador Copy Trade, operações fictícias">
  <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Turbo &gt;83</span></h2>
- <p>Registro de <b>toda oportunidade elegível com Turbo &gt;83/100</b> (84–100 em pontuação inteira), após vela fechada e aprovação dos filtros de risco, macro, qualidade e plano. <b>Não exige mais score original ≥65</b>, embora a análise original continue fornecendo contexto e níveis técnicos. Sem ordens reais. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Operações anteriores mantêm seu lote original.</p></div>
+ <p><b>Regra única de seleção: confluência Turbo &gt;83/100</b> (83,0 não entra; 83,1 entra). Todas as leituras acima desse limite com vela fechada, direção e preços de entrada, stop e alvo válidos geram uma operação fictícia, mesmo que o filtro seletivo do painel Turbo aponte aguardando confirmação. <b>Sem nota mínima do motor original nem outro filtro estratégico de entrada.</b> Resultados são simulações, não ordens reais ou probabilidade comprovada. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Histórico existente mantido.</p></div>
  <div class="storm-v95-action-row"><span id="stormCopyHealth" class="storm-v95-chip">Monitor não iniciado</span><button type="button" class="storm-v95-btn" id="stormCopyRefresh">↻ Consultar OHLC</button><button type="button" class="storm-v95-btn" id="stormCopyExport">↓ Exportar operações</button></div></header>
  <div class="storm-v95-stats"><div class="storm-v95-stat"><small>SALDO ACUMULADO FICTÍCIO</small><b id="stormCopyTotal">US$ 0,00</b></div>
  <div class="storm-v95-stat"><small>TAKES / STOPS</small><b id="stormCopyCounts">0 / 0</b></div>
@@ -4274,7 +4277,7 @@ function paint(){if(!$('stormCopyTrade'))return;
    <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Math.round(r.score)}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
    <td>${price(r.entry,r.asset)}</td><td>${price(r.tp,r.asset)}</td><td>${price(r.stop,r.asset)}</td>
    <td class="${cls}">${statusText(r.status)}</td><td class="${cls}">${ok(r.pnlUsd)?money(r.pnlUsd):'—'}</td></tr>`}).join(''):
-  '<tr><td colspan="10">Sem oportunidades elegíveis com Turbo &gt;83/100 e filtros de segurança aprovados desde o início do monitor.</td></tr>';
+  '<tr><td colspan="10">Nenhuma leitura com Turbo &gt;83/100 e dados suficientes observada desde o início do monitor.</td></tr>';
  requestAnimationFrame(drawAll);
 }
 function drawAll(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;drawTurbo();if(open)drawCopy()})}
