@@ -1,0 +1,10 @@
+Storm Códex IA — build Turbo contextual + Copy >83 (07/11/2026)
+Pacote de publicação para Netlify: index.html na raiz, autossuficiente.
+Origem: feature/turbo-contextual-20261107, preservada no GitHub.
+- Um único modo Turbo: leitura contextual de tendência, consolidação, rompimento e volatilidade.
+- Ícone de raio maior/preenchido e animações existentes preservadas.
+- Copy Trade: score Turbo estritamente maior que 83/100; sem segunda nota do Clássico nem veto seletivo.
+- Ainda exige dados OHLC válidos, direção e níveis coerentes para simular uma operação; não envia ordens reais.
+- Clássico Precision e histórico de versões anteriores preservados.
+- Testados: sintaxe dos 23 scripts HTML. Feed real, backtest de mercado e navegador ao vivo não validados.
+Observação: esta revisão mantém numeração visual v9.9 de sua base; nome descritivo evita confusão com o ZIP v9.9 antigo.
