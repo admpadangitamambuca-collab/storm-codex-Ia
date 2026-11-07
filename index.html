@@ -4274,7 +4274,7 @@ function paint(){if(!$('stormCopyTrade'))return;
  const tbody=$('stormCopyRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,80).map(r=>{
   const cls=r.status==='take'?'gain':r.status==='stop'?'loss':'';
   return `<tr><td>${fmtTime(r.closedAt)} · ${esc(r.asset)}/${esc(r.tf)}</td>
-   <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Math.round(r.score)}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
+   <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Number(r.score).toLocaleString('pt-BR',{maximumFractionDigits:2})}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
    <td>${price(r.entry,r.asset)}</td><td>${price(r.tp,r.asset)}</td><td>${price(r.stop,r.asset)}</td>
    <td class="${cls}">${statusText(r.status)}</td><td class="${cls}">${ok(r.pnlUsd)?money(r.pnlUsd):'—'}</td></tr>`}).join(''):
   '<tr><td colspan="10">Nenhuma leitura com Turbo &gt;83/100 e dados suficientes observada desde o início do monitor.</td></tr>';
