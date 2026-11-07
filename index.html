@@ -551,7 +551,7 @@ body.v83-turbo-on[data-v92-side] .asset-switch,body.v83-turbo-on[data-v92-side] 
 <style id="storm-v98-turbo-electricity">
 /* v9.9, exclusivamente visual: relâmpagos orgânicos em canvas, sem blocos de borda. */
 #v83TurboBtn::before{content:none}
-#v83TurboBtn .storm-v99-bolt{width:26px;height:26px;display:block;flex:none;pointer-events:none}
+#v83TurboBtn .storm-v99-bolt{width:30px;height:30px;display:block;flex:none;pointer-events:none}
 #v83TurboBtn[aria-pressed="true"]{box-shadow:0 0 10px #74cfff4f,inset 0 0 8px #bdeaff24;border-color:#8fcfff}
 #stormV98Electricity{position:fixed;inset:0;pointer-events:none;z-index:180;opacity:0;visibility:hidden;transition:opacity .14s ease,visibility .14s;overflow:visible}
 body.v83-turbo-on #stormV98Electricity{opacity:1;visibility:visible}
@@ -3394,6 +3394,40 @@ function positionSize(plan,asset,balance,riskPct,settings){
  const budget=balance*riskPct/100,raw=budget/unitCost,lots=Math.floor((raw+1e-10)*100)/100;
  return {available:true,budget,unitCost,lots,estimatedRisk:lots*unitCost,belowMin:lots<.01,fx,raw,mult};
 }
+/* Turbo contextual: apenas OHLC encerrado, sem previsão ou dados institucionais inventados.
+ * Regime é diagnóstico de regras e pode reforçar os bloqueios, nunca relaxá-los. */
+function marketRegime(bars,atrVal,side,structureKind=''){
+ const unknown={kind:'unknown',label:'Indeterminado',reason:'Histórico insuficiente para classificar o regime.',efficiency:null,volatility:null,trendConflict:false,volatileContinuation:false};
+ if(!Array.isArray(bars)||bars.length<45||!number(atrVal)||atrVal<=0)return unknown;
+ const tail=bars.slice(-36);
+ if(!tail.every(b=>b&&[b.open,b.high,b.low,b.close].every(number)&&b.high>=b.low))return {...unknown,reason:'Histórico OHLC inconsistente para regime.'};
+ const recent=tail.slice(-21),last=recent.at(-1),first=recent[0],previous=tail.slice(-22,-1);
+ const path=recent.slice(1).reduce((sum,b,i)=>sum+Math.abs(b.close-recent[i].close),0);
+ const move=last.close-first.close,efficiency=clamp(Math.abs(move)/(path||atrVal),0,1);
+ const preBars=recent.slice(0,-1),prePath=preBars.slice(1).reduce((sum,b,i)=>sum+Math.abs(b.close-preBars[i].close),0);
+ const preMove=preBars.at(-1).close-preBars[0].close,preEfficiency=clamp(Math.abs(preMove)/(prePath||atrVal),0,1);
+ const signedMove=move/atrVal,trendSide=move>=0?'buy':'sell';
+ const trueRange=(b,prev)=>Math.max(b.high-b.low,Math.abs(b.high-prev.close),Math.abs(b.low-prev.close));
+ const tr=tail.slice(1).map((b,i)=>trueRange(b,tail[i]));
+ const avg=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
+ const vNow=avg(tr.slice(-7)),vEarlier=avg(tr.slice(-21,-7));
+ const volatility=vEarlier>0?vNow/vEarlier:1;
+ const top=Math.max(...previous.map(b=>b.high)),bottom=Math.min(...previous.map(b=>b.low));
+ const body=Math.abs(last.close-last.open),range=last.high-last.low;
+ // Um fechamento acima de máximas durante uma tendência não é necessariamente um novo rompimento.
+ const emergedFromRange=preEfficiency<=.32||Math.abs(preMove)/atrVal<=1.25;
+ const upBreak=emergedFromRange&&last.close>top+atrVal*.05&&last.close>last.open&&body>=atrVal*.22&&range>0&&(last.close-last.low)/range>=.62;
+ const downBreak=emergedFromRange&&last.close<bottom-atrVal*.05&&last.close<last.open&&body>=atrVal*.22&&range>0&&(last.high-last.close)/range>=.62;
+ let kind='transition',label='Transição / indefinição';
+ if(upBreak||downBreak){kind='breakout';label='Rompimento '+(upBreak?'altista':'baixista')+' por fechamento';}
+ else if(efficiency>=.38&&Math.abs(signedMove)>=1.35){kind='trend';label='Tendência '+(trendSide==='buy'?'de alta':'de baixa');}
+ else if(efficiency<=.23&&Math.abs(signedMove)<=1.45){kind='range';label='Consolidação / mercado lateral';}
+ const confirmedReversal=structureKind==='choch_'+(side==='buy'?'up':'down');
+ const trendConflict=kind==='trend'&&['buy','sell'].includes(side)&&side!==trendSide&&!confirmedReversal;
+ const volatileContinuation=volatility>=1.85&&body>=atrVal*1.1&&kind!=='breakout';
+ const reason='Eficiência direcional '+Math.round(efficiency*100)+'%; deslocamento '+Math.abs(signedMove).toFixed(2)+' ATR; volatilidade relativa '+volatility.toFixed(2)+'×. Regra OHLC, sem probabilidade calibrada.';
+ return {kind,label,reason,efficiency,volatility,trendSide,trendConflict,volatileContinuation};
+}
 function analyze(data,ctx,records=[]){
  const asset=data.asset,tf=data.tf,c=data.state?.candles||[],a=data.state?.analysis||{},plan=ctx?.plan||{},sc=ctx?.sc||{},macro=ctx?.macro||{};
  const qualityCheck=quality(c,tf,{providerStale:data.state?.providerStale,mode:data.state?.mode});
@@ -3407,6 +3441,7 @@ function analyze(data,ctx,records=[]){
  const structAligned=plan.side==='buy'?['bos_up','choch_up','trend_up'].includes(sc.kind):['bos_down','choch_down','trend_down'].includes(sc.kind);
  const macroOK=!macro.danger&&!macro.unverified,antiTrap=trap.risk!==plan.side;
  const mtf=plan.available?plan.aligned/plan.available:0;
+ const regime=marketRegime(c,atrVal,plan.side,sc.kind);
  // v9.7: bônus moderado de estrutura/price action só após fechamento confirmado.
  const closeRange=latest&&number(latest.high)&&number(latest.low)?latest.high-latest.low:0;
  const dirCandle=latest&&(plan.side==='buy'?latest.close>latest.open:plan.side==='sell'?latest.close<latest.open:false);
@@ -3447,13 +3482,15 @@ function analyze(data,ctx,records=[]){
  const narrative=[
  `Viés ${sideName(plan.side).toLowerCase()} identificado pelo motor clássico em ${asset}/${tf}.`,
  `Estrutura: ${sc.title||'não confirmada'}.`,
+ `Regime do mercado: ${regime.label}. ${regime.reason}`,
+
  `${trap.message}`,
  `Há ${fvgs.length} região(ões) FVG não integralmente preenchida(s) na janela analisada.`,
  `Confluência de ${plan.aligned||0} entre ${plan.available||0} períodos recentes disponíveis.`,
  macro.danger?'Evento/manchete macro de atenção: evitar gatilhos automáticos.':macro.unverified?'Notícias/calendário incompletos: ausência de aviso não significa mercado seguro.':'Nenhuma notícia de impacto foi identificada nas fontes consultadas.',
  `Conclusão prévia: ${initialReady?'confluência inicial observável; ainda depende do filtro seletivo.':'Aguardar até resolver os bloqueios.'}`
  ];
- const base={asset,tf,qualityCheck,crossSource,atrVal,trap,fvgs,pattern,fib,components,score,baseScore,learned,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned};
+ const base={asset,tf,qualityCheck,crossSource,atrVal,regime,trap,fvgs,pattern,fib,components,score,baseScore,learned,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned};
  const selection=selectiveGate(data,ctx,base);
  return {...base,ready:selection.ready,brakes:selection.brakes,selection,trigger:selection.trigger};
 }
@@ -3523,6 +3560,14 @@ function selectiveGate(data,ctx,analysis){
   reasons.push('Risco/retorno líquido estimado inferior a '+SELECTIVE_RR_MIN.toFixed(2)+':1.');
  const trigger=entryTrigger(bars,side,atr,sc,Array.isArray(sc.zone)?sc.zone:[],analysis.fvgs);
  if(!trigger.passed)reasons.push(trigger.message);
+ // Filtros contextuais adicionais: não removem bloqueios originais.
+ if(analysis.regime?.trendConflict)
+  reasons.push('Regime de tendência forte contra a direção; aguardar mudança estrutural confirmada.');
+ if(analysis.regime?.kind==='range'&&['ema_reclaim','balanced_continuation'].includes(trigger.kind))
+  reasons.push('Consolidação: retomada de médias não basta; esperar rompimento ou reteste validado.');
+ if(analysis.regime?.volatileContinuation&&trigger.kind==='balanced_continuation')
+  reasons.push('Expansão abrupta de volatilidade: aguardar reteste ou estabilização.');
+
  // Nível intermediário não libera sinais marginais: exige tendência, estrutura
  // ou zona favorável, confirmação temporal ampla e gatilho sem perseguição.
  if(analysis.score>=SELECTIVE_SCORE_MIN&&analysis.score<BALANCED_STRONG_SCORE){
@@ -3665,6 +3710,7 @@ function renderTechnical(data,ctx,an){
  $('v90Intelligence').innerHTML=`<h3>01 / Motor de confluência & armadilhas</h3><p class="v90-muted">Direção técnica de base: Clássico 8.2. A aprovação do sinal depende EXCLUSIVAMENTE dos filtros seletivos 9.1.</p>
  <div class="v90-factors">${an.components.map(x=>`<div class="v90-factor"><div><span>${esc(x.name)}</span><b>${x.earned}/${x.max}</b></div><div class="v90-track"><i style="width:${(100*x.earned/x.max).toFixed(0)}%"></i></div><small>${esc(x.note)}</small></div>`).join('')}</div>
  <div class="v90-alert ${an.trap.risk===ctx.plan.side?'critical':'neutral'}"><b>Detector de armadilhas: ${esc(an.trap.type)}</b><p>${esc(an.trap.message)}</p></div>
+ ${row('Regime contextual (OHLC)',an.regime.label+' · '+an.regime.reason)}
  ${row('Leitura Wyckoff',ctx.sc?.wyckoff||'Não disponível')}${row('Padrão harmônico',an.pattern?an.pattern.type+' ('+sideName(an.pattern.side)+')':'Não confirmado')}
  ${row('Fib. 38,2%–61,8%',an.fib?(money(an.fib.low,data.asset)+' → '+money(an.fib.high,data.asset)+(an.fib.inside?' · DENTRO':' · fora')):'Sem base')}
  ${row('Confronto XAU com fonte spot',an.crossSource?.reason||'Indisponível')}
@@ -3826,7 +3872,7 @@ const maxTradeCount=400;
 const dataStore=new Map(); // cache individual e isolado por ativo e timeframe
 const armedAt=new Map(); // primeiro fechamento observado arma o monitor, nunca cria trade retroativo
 let open=false,started=false,scanning=false,tfShown='M5',assetShown='XAUUSD',lastScanAt=0,scanError='',renderFrame=0;
-const COPY_MIN_TURBO=78, COPY_MIN_CLASSIC=65, INITIAL_EQUITY=100;
+const COPY_TURBO_THRESHOLD_EXCLUSIVE=83, INITIAL_EQUITY=100; // Score deve ser >83; 83 nao entra.
 function storageKey(){return STORAGE_PREFIX+String(window.SGUserHistoryKey||'usuario_local')}
 function loadTrades(){try{return (JSON.parse(localStorage.getItem(storageKey())||'[]')||[])
  .filter(r=>r&&ASSETS.includes(r.asset)&&FRAMES[r.tf]&&r.origin==='observed_copy_v95'&&KNOWN_LOTS[r.asset]?.includes(r.lot)&&ok(r.entry)&&ok(r.stop)&&ok(r.tp)&&ok(r.t)).slice(0,maxTradeCount)}catch{return []}}
@@ -3893,15 +3939,17 @@ function computeForCopy(asset,tf,bar){
  const levels=p?.hasLevels&&ok(p.entry)&&ok(p.stop)&&ok(p.targets?.[0]);
  const originalScore=Number(bar?.analysis?.score);
  const turboScore=Number(analysis?.score);
- const originalValid=Number.isFinite(originalScore)&&originalScore>=COPY_MIN_CLASSIC;
- const turboValid=Number.isFinite(turboScore)&&turboScore>=COPY_MIN_TURBO;
- const valid=Boolean(analysis?.ready&&turboValid&&originalValid&&levels&&quality?.fresh&&
+ const turboValid=Number.isFinite(turboScore)&&turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE;
+ // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
+ // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
+ // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
+ const valid=Boolean(turboValid&&levels&&quality?.fresh&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
- reason:valid?'Dupla confirmação aprovada (Turbo ≥78, Clássico ≥65)':
-  (!turboValid?'Turbo abaixo de 78/100':!originalValid?'Motor original abaixo de 65/100 ou indisponível':
-   analysis?.brakes?.[0]||'Bloqueios de integridade/risco ou plano técnico sem aprovação')};
+ reason:valid?'Confluência Turbo >83/100: operação simulada elegível':
+  (!turboValid?'Confluência Turbo precisa ser superior a 83/100':
+   'Falta OHLC recente, direção ou níveis válidos para simular entrada, stop e alvo')};
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
@@ -3948,7 +3996,7 @@ function observe(asset,tf,bar){const id=asset+'|'+tf;
  const rec={id:unique,asset,tf,t:bar.candles.at(-1).t,closedAt:bar.closedAt,
   recordedAt:Date.now(),side,score:evaluated.score,entry:p.entry,stop:p.stop,tp:p.targets[0],
   lot:LOTS[asset],contractSize:CONTRACT[asset],classicScore:evaluated.classicScore,status:'pending',seenBars:0,
-  source:bar.source,origin:'observed_copy_v95',version:'9.6',strategy:evaluated.analysis.trigger?.kind||'Turbo 9.4'};
+  source:bar.source,origin:'observed_copy_v95',version:'copy-turbo-83-2026-11-07',strategy:'confluencia_turbo_gt83',triggerInfo:evaluated.analysis.trigger?.kind||'nao_identificado'};
  rows.unshift(rec);saveTrades(rows);return true;
 }
 function due(bar,tf,force){const now=Date.now();if(force)return !bar||now-bar.fetchedAt>=12000;
@@ -4021,8 +4069,8 @@ function chartPanelHTML(){return `<section id="stormTurboChart" aria-label="Grá
  <canvas id="stormTurboCanvas" class="storm-v95-canvas" aria-label="Gráfico técnico de velas do Turbo com EMA9, EMA21, entrada, stop e take"></canvas>
  <p class="storm-v95-foot">Mesma seleção de ativo e período do Turbo. Marcações são níveis teóricos do motor, não ordens executadas. Velas futuras não são projetadas.</p></section>`}
 function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulador Copy Trade, operações fictícias">
- <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Dupla confirmação</span></h2>
- <p>Entradas fictícias só quando <b>Turbo ≥ 78/100</b> <strong style="color:#ffd27e">E</strong> <b>motor original ≥ 65/100</b>, além dos bloqueios essenciais de segurança. Valores superiores são aceitos. Sem ordens reais. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Operações anteriores mantêm seu lote original.</p></div>
+ <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Turbo &gt;83</span></h2>
+ <p><b>Regra única de seleção: confluência Turbo &gt;83/100</b> (83,0 não entra; 83,1 entra). Todas as leituras acima desse limite com vela fechada, direção e preços de entrada, stop e alvo válidos geram uma operação fictícia, mesmo que o filtro seletivo do painel Turbo aponte aguardando confirmação. <b>Sem nota mínima do motor original nem outro filtro estratégico de entrada.</b> Resultados são simulações, não ordens reais ou probabilidade comprovada. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Histórico existente mantido.</p></div>
  <div class="storm-v95-action-row"><span id="stormCopyHealth" class="storm-v95-chip">Monitor não iniciado</span><button type="button" class="storm-v95-btn" id="stormCopyRefresh">↻ Consultar OHLC</button><button type="button" class="storm-v95-btn" id="stormCopyExport">↓ Exportar operações</button></div></header>
  <div class="storm-v95-stats"><div class="storm-v95-stat"><small>SALDO ACUMULADO FICTÍCIO</small><b id="stormCopyTotal">US$ 0,00</b></div>
  <div class="storm-v95-stat"><small>TAKES / STOPS</small><b id="stormCopyCounts">0 / 0</b></div>
@@ -4226,10 +4274,10 @@ function paint(){if(!$('stormCopyTrade'))return;
  const tbody=$('stormCopyRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,80).map(r=>{
   const cls=r.status==='take'?'gain':r.status==='stop'?'loss':'';
   return `<tr><td>${fmtTime(r.closedAt)} · ${esc(r.asset)}/${esc(r.tf)}</td>
-   <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Math.round(r.score)}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
+   <td>${r.side==='buy'?'COMPRA':'VENDA'}</td><td>${Number(r.score).toLocaleString('pt-BR',{maximumFractionDigits:2})}/100</td><td>${Number.isFinite(r.classicScore)?Math.round(r.classicScore)+'/100':'—'}</td><td>${r.lot.toFixed(2).replace('.',',')}</td>
    <td>${price(r.entry,r.asset)}</td><td>${price(r.tp,r.asset)}</td><td>${price(r.stop,r.asset)}</td>
    <td class="${cls}">${statusText(r.status)}</td><td class="${cls}">${ok(r.pnlUsd)?money(r.pnlUsd):'—'}</td></tr>`}).join(''):
-  '<tr><td colspan="10">Sem operações novas após dupla confirmação Turbo ≥78 e Original ≥65.</td></tr>';
+  '<tr><td colspan="10">Nenhuma leitura com Turbo &gt;83/100 e dados suficientes observada desde o início do monitor.</td></tr>';
  requestAnimationFrame(drawAll);
 }
 function drawAll(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;drawTurbo();if(open)drawCopy()})}
@@ -4239,7 +4287,7 @@ function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','t
  const link=document.createElement('a'),url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
  link.href=url;link.download='STORM_CODEX_v9_6_COPY_TRADE_'+new Date().toISOString().slice(0,10)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-window.StormCopyTrade95={version:'9.6',getTrades:loadTrades,getStatus:()=>({started,scanning,scanError,lastScanAt}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
+window.StormCopyTrade95={version:'copy-turbo-83-2026-11-07',getTrades:loadTrades,getStatus:()=>({started,scanning,scanError,lastScanAt,scoreThreshold:'>83',simulatedOnly:true}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
  // Funções puras para auditoria e testes. Não executam ordens.
  lotPnl,settleOne,aggregate,scanNow:()=>{if(!started)started=true;return scan(true)}};
 window.StormCopyTrade96=window.StormCopyTrade95;
@@ -4367,11 +4415,30 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    ctx.restore();
   }
   function drawIcon(on,flash){
+   // Raio clássico, robusto e inteiramente preenchido. Não altera a animação dos relâmpagos da tela.
    i.clearRect(0,0,56,56);
-   const main=[{x:31,y:2},{x:25,y:12},{x:29,y:19},{x:17,y:31},{x:28,y:29},{x:23,y:39},{x:14,y:54}];
-   const side=[{x:26,y:19},{x:37,y:25},{x:33,y:34}];
-   stroke(i,main,on?.58+flash*.36:.56,false,true,on);
-   stroke(i,side,on?.28+flash*.20:.20,true,true,on);
+   i.save();
+   i.beginPath();
+   i.moveTo(33,2);
+   i.lineTo(10,31);
+   i.lineTo(26,31);
+   i.lineTo(19,54);
+   i.lineTo(47,21);
+   i.lineTo(31,21);
+   i.lineTo(35,2);
+   i.closePath();
+   const fill=i.createLinearGradient(12,4,46,53);
+   if(on){fill.addColorStop(0,'#e7fbff');fill.addColorStop(.48,'#8fe1ff');fill.addColorStop(1,'#347fd4');}
+   else{fill.addColorStop(0,'#fff5d8');fill.addColorStop(.48,'#ffcc6c');fill.addColorStop(1,'#c77e25');}
+   i.fillStyle=fill;
+   i.shadowColor=on?'#66caff':'#e2a34a';
+   i.shadowBlur=on?5+flash*4:2;
+   i.fill();
+   i.shadowBlur=0;
+   i.strokeStyle=on?'#d7f6ff':'#ffe1a1';
+   i.lineWidth=1.4;
+   i.stroke();
+   i.restore();
   }
   function animate(t){
    raf=0;if(!active||document.hidden||reduced?.matches)return;
