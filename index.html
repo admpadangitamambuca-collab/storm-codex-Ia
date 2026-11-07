@@ -551,7 +551,7 @@ body.v83-turbo-on[data-v92-side] .asset-switch,body.v83-turbo-on[data-v92-side] 
 <style id="storm-v98-turbo-electricity">
 /* v9.9, exclusivamente visual: relâmpagos orgânicos em canvas, sem blocos de borda. */
 #v83TurboBtn::before{content:none}
-#v83TurboBtn .storm-v99-bolt{width:26px;height:26px;display:block;flex:none;pointer-events:none}
+#v83TurboBtn .storm-v99-bolt{width:30px;height:30px;display:block;flex:none;pointer-events:none}
 #v83TurboBtn[aria-pressed="true"]{box-shadow:0 0 10px #74cfff4f,inset 0 0 8px #bdeaff24;border-color:#8fcfff}
 #stormV98Electricity{position:fixed;inset:0;pointer-events:none;z-index:180;opacity:0;visibility:hidden;transition:opacity .14s ease,visibility .14s;overflow:visible}
 body.v83-turbo-on #stormV98Electricity{opacity:1;visibility:visible}
@@ -4367,11 +4367,30 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    ctx.restore();
   }
   function drawIcon(on,flash){
+   // Raio clássico, robusto e inteiramente preenchido. Não altera a animação dos relâmpagos da tela.
    i.clearRect(0,0,56,56);
-   const main=[{x:31,y:2},{x:25,y:12},{x:29,y:19},{x:17,y:31},{x:28,y:29},{x:23,y:39},{x:14,y:54}];
-   const side=[{x:26,y:19},{x:37,y:25},{x:33,y:34}];
-   stroke(i,main,on?.58+flash*.36:.56,false,true,on);
-   stroke(i,side,on?.28+flash*.20:.20,true,true,on);
+   i.save();
+   i.beginPath();
+   i.moveTo(33,2);
+   i.lineTo(10,31);
+   i.lineTo(26,31);
+   i.lineTo(19,54);
+   i.lineTo(47,21);
+   i.lineTo(31,21);
+   i.lineTo(35,2);
+   i.closePath();
+   const fill=i.createLinearGradient(12,4,46,53);
+   if(on){fill.addColorStop(0,'#e7fbff');fill.addColorStop(.48,'#8fe1ff');fill.addColorStop(1,'#347fd4');}
+   else{fill.addColorStop(0,'#fff5d8');fill.addColorStop(.48,'#ffcc6c');fill.addColorStop(1,'#c77e25');}
+   i.fillStyle=fill;
+   i.shadowColor=on?'#66caff':'#e2a34a';
+   i.shadowBlur=on?5+flash*4:2;
+   i.fill();
+   i.shadowBlur=0;
+   i.strokeStyle=on?'#d7f6ff':'#ffe1a1';
+   i.lineWidth=1.4;
+   i.stroke();
+   i.restore();
   }
   function animate(t){
    raf=0;if(!active||document.hidden||reduced?.matches)return;
