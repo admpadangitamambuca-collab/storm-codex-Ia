@@ -3394,6 +3394,40 @@ function positionSize(plan,asset,balance,riskPct,settings){
  const budget=balance*riskPct/100,raw=budget/unitCost,lots=Math.floor((raw+1e-10)*100)/100;
  return {available:true,budget,unitCost,lots,estimatedRisk:lots*unitCost,belowMin:lots<.01,fx,raw,mult};
 }
+/* Turbo contextual: apenas OHLC encerrado, sem previsão ou dados institucionais inventados.
+ * Regime é diagnóstico de regras e pode reforçar os bloqueios, nunca relaxá-los. */
+function marketRegime(bars,atrVal,side,structureKind=''){
+ const unknown={kind:'unknown',label:'Indeterminado',reason:'Histórico insuficiente para classificar o regime.',efficiency:null,volatility:null,trendConflict:false,volatileContinuation:false};
+ if(!Array.isArray(bars)||bars.length<45||!number(atrVal)||atrVal<=0)return unknown;
+ const tail=bars.slice(-36);
+ if(!tail.every(b=>b&&[b.open,b.high,b.low,b.close].every(number)&&b.high>=b.low))return {...unknown,reason:'Histórico OHLC inconsistente para regime.'};
+ const recent=tail.slice(-21),last=recent.at(-1),first=recent[0],previous=tail.slice(-22,-1);
+ const path=recent.slice(1).reduce((sum,b,i)=>sum+Math.abs(b.close-recent[i].close),0);
+ const move=last.close-first.close,efficiency=clamp(Math.abs(move)/(path||atrVal),0,1);
+ const preBars=recent.slice(0,-1),prePath=preBars.slice(1).reduce((sum,b,i)=>sum+Math.abs(b.close-preBars[i].close),0);
+ const preMove=preBars.at(-1).close-preBars[0].close,preEfficiency=clamp(Math.abs(preMove)/(prePath||atrVal),0,1);
+ const signedMove=move/atrVal,trendSide=move>=0?'buy':'sell';
+ const trueRange=(b,prev)=>Math.max(b.high-b.low,Math.abs(b.high-prev.close),Math.abs(b.low-prev.close));
+ const tr=tail.slice(1).map((b,i)=>trueRange(b,tail[i]));
+ const avg=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
+ const vNow=avg(tr.slice(-7)),vEarlier=avg(tr.slice(-21,-7));
+ const volatility=vEarlier>0?vNow/vEarlier:1;
+ const top=Math.max(...previous.map(b=>b.high)),bottom=Math.min(...previous.map(b=>b.low));
+ const body=Math.abs(last.close-last.open),range=last.high-last.low;
+ // Um fechamento acima de máximas durante uma tendência não é necessariamente um novo rompimento.
+ const emergedFromRange=preEfficiency<=.32||Math.abs(preMove)/atrVal<=1.25;
+ const upBreak=emergedFromRange&&last.close>top+atrVal*.05&&last.close>last.open&&body>=atrVal*.22&&range>0&&(last.close-last.low)/range>=.62;
+ const downBreak=emergedFromRange&&last.close<bottom-atrVal*.05&&last.close<last.open&&body>=atrVal*.22&&range>0&&(last.high-last.close)/range>=.62;
+ let kind='transition',label='Transição / indefinição';
+ if(upBreak||downBreak){kind='breakout';label='Rompimento '+(upBreak?'altista':'baixista')+' por fechamento';}
+ else if(efficiency>=.38&&Math.abs(signedMove)>=1.35){kind='trend';label='Tendência '+(trendSide==='buy'?'de alta':'de baixa');}
+ else if(efficiency<=.23&&Math.abs(signedMove)<=1.45){kind='range';label='Consolidação / mercado lateral';}
+ const confirmedReversal=structureKind==='choch_'+(side==='buy'?'up':'down');
+ const trendConflict=kind==='trend'&&['buy','sell'].includes(side)&&side!==trendSide&&!confirmedReversal;
+ const volatileContinuation=volatility>=1.85&&body>=atrVal*1.1&&kind!=='breakout';
+ const reason='Eficiência direcional '+Math.round(efficiency*100)+'%; deslocamento '+Math.abs(signedMove).toFixed(2)+' ATR; volatilidade relativa '+volatility.toFixed(2)+'×. Regra OHLC, sem probabilidade calibrada.';
+ return {kind,label,reason,efficiency,volatility,trendSide,trendConflict,volatileContinuation};
+}
 function analyze(data,ctx,records=[]){
  const asset=data.asset,tf=data.tf,c=data.state?.candles||[],a=data.state?.analysis||{},plan=ctx?.plan||{},sc=ctx?.sc||{},macro=ctx?.macro||{};
  const qualityCheck=quality(c,tf,{providerStale:data.state?.providerStale,mode:data.state?.mode});
@@ -3407,6 +3441,7 @@ function analyze(data,ctx,records=[]){
  const structAligned=plan.side==='buy'?['bos_up','choch_up','trend_up'].includes(sc.kind):['bos_down','choch_down','trend_down'].includes(sc.kind);
  const macroOK=!macro.danger&&!macro.unverified,antiTrap=trap.risk!==plan.side;
  const mtf=plan.available?plan.aligned/plan.available:0;
+ const regime=marketRegime(c,atrVal,plan.side,sc.kind);
  // v9.7: bônus moderado de estrutura/price action só após fechamento confirmado.
  const closeRange=latest&&number(latest.high)&&number(latest.low)?latest.high-latest.low:0;
  const dirCandle=latest&&(plan.side==='buy'?latest.close>latest.open:plan.side==='sell'?latest.close<latest.open:false);
@@ -3447,13 +3482,15 @@ function analyze(data,ctx,records=[]){
  const narrative=[
  `Viés ${sideName(plan.side).toLowerCase()} identificado pelo motor clássico em ${asset}/${tf}.`,
  `Estrutura: ${sc.title||'não confirmada'}.`,
+ `Regime do mercado: ${regime.label}. ${regime.reason}`,
+
  `${trap.message}`,
  `Há ${fvgs.length} região(ões) FVG não integralmente preenchida(s) na janela analisada.`,
  `Confluência de ${plan.aligned||0} entre ${plan.available||0} períodos recentes disponíveis.`,
  macro.danger?'Evento/manchete macro de atenção: evitar gatilhos automáticos.':macro.unverified?'Notícias/calendário incompletos: ausência de aviso não significa mercado seguro.':'Nenhuma notícia de impacto foi identificada nas fontes consultadas.',
  `Conclusão prévia: ${initialReady?'confluência inicial observável; ainda depende do filtro seletivo.':'Aguardar até resolver os bloqueios.'}`
  ];
- const base={asset,tf,qualityCheck,crossSource,atrVal,trap,fvgs,pattern,fib,components,score,baseScore,learned,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned};
+ const base={asset,tf,qualityCheck,crossSource,atrVal,regime,trap,fvgs,pattern,fib,components,score,baseScore,learned,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned};
  const selection=selectiveGate(data,ctx,base);
  return {...base,ready:selection.ready,brakes:selection.brakes,selection,trigger:selection.trigger};
 }
@@ -3523,6 +3560,14 @@ function selectiveGate(data,ctx,analysis){
   reasons.push('Risco/retorno líquido estimado inferior a '+SELECTIVE_RR_MIN.toFixed(2)+':1.');
  const trigger=entryTrigger(bars,side,atr,sc,Array.isArray(sc.zone)?sc.zone:[],analysis.fvgs);
  if(!trigger.passed)reasons.push(trigger.message);
+ // Filtros contextuais adicionais: não removem bloqueios originais.
+ if(analysis.regime?.trendConflict)
+  reasons.push('Regime de tendência forte contra a direção; aguardar mudança estrutural confirmada.');
+ if(analysis.regime?.kind==='range'&&['ema_reclaim','balanced_continuation'].includes(trigger.kind))
+  reasons.push('Consolidação: retomada de médias não basta; esperar rompimento ou reteste validado.');
+ if(analysis.regime?.volatileContinuation&&trigger.kind==='balanced_continuation')
+  reasons.push('Expansão abrupta de volatilidade: aguardar reteste ou estabilização.');
+
  // Nível intermediário não libera sinais marginais: exige tendência, estrutura
  // ou zona favorável, confirmação temporal ampla e gatilho sem perseguição.
  if(analysis.score>=SELECTIVE_SCORE_MIN&&analysis.score<BALANCED_STRONG_SCORE){
@@ -3665,6 +3710,7 @@ function renderTechnical(data,ctx,an){
  $('v90Intelligence').innerHTML=`<h3>01 / Motor de confluência & armadilhas</h3><p class="v90-muted">Direção técnica de base: Clássico 8.2. A aprovação do sinal depende EXCLUSIVAMENTE dos filtros seletivos 9.1.</p>
  <div class="v90-factors">${an.components.map(x=>`<div class="v90-factor"><div><span>${esc(x.name)}</span><b>${x.earned}/${x.max}</b></div><div class="v90-track"><i style="width:${(100*x.earned/x.max).toFixed(0)}%"></i></div><small>${esc(x.note)}</small></div>`).join('')}</div>
  <div class="v90-alert ${an.trap.risk===ctx.plan.side?'critical':'neutral'}"><b>Detector de armadilhas: ${esc(an.trap.type)}</b><p>${esc(an.trap.message)}</p></div>
+ ${row('Regime contextual (OHLC)',an.regime.label+' · '+an.regime.reason)}
  ${row('Leitura Wyckoff',ctx.sc?.wyckoff||'Não disponível')}${row('Padrão harmônico',an.pattern?an.pattern.type+' ('+sideName(an.pattern.side)+')':'Não confirmado')}
  ${row('Fib. 38,2%–61,8%',an.fib?(money(an.fib.low,data.asset)+' → '+money(an.fib.high,data.asset)+(an.fib.inside?' · DENTRO':' · fora')):'Sem base')}
  ${row('Confronto XAU com fonte spot',an.crossSource?.reason||'Indisponível')}
