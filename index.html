@@ -1552,7 +1552,7 @@ function priceAction(c,i,atr,side){
  const breakConfirmed=directional&&body>=.43&&closePos>=.68&&(buy?
   bar.close>boundary+.055*a&&prev.close<=boundary+.035*a:
   bar.close<boundary-.055*a&&prev.close>=boundary-.035*a);
- const prior3=c.slice(Math.max(0,i-4),i);
+ const prior3=c.slice(Math.max(0,i-3),i);
  const microBreak=directional&&body>=.50&&closePos>=.70&&prior3.length===3&&
   (buy?bar.close>Math.max(...prior3.map(x=>x.high))+.025*a:bar.close<Math.min(...prior3.map(x=>x.low))-.025*a);
  const continuation=microBreak&&(trendAligned||(!trendAgainst&&(buy?prev.close>c[i-3].close:prev.close<c[i-3].close)));
