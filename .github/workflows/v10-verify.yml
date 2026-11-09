@@ -1,0 +1,23 @@
+name: Storm Codex IA v10 verify
+on:
+  push:
+    branches:
+      - feature/v10-dual-engine-evolution-20261109
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check dual-engine v10 and regression invariants
+        run: node tests/v10_verify.cjs
