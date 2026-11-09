@@ -1,0 +1,27 @@
+name: MT5 Bridge safety checks
+on:
+  push:
+    branches: [feature/mt5-local-bridge-demo-20261108]
+  pull_request:
+    paths: ["mt5-bridge/**", "index.html", ".github/workflows/mt5-bridge-tests.yml"]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check Node syntax
+        run: |
+          node --check mt5-bridge/bridge-core.mjs
+          node --check mt5-bridge/bridge-server.mjs
+      - name: Unit tests
+        run: cd mt5-bridge && npm test
+      - name: Confirm feature is opt-in and disabled by default
+        run: |
+          grep -q '"executionEnabled": false' mt5-bridge/config.example.json
+          grep -q 'InpEnableTrading=false' mt5-bridge/StormCodex_LocalBridge.mq5
+          grep -q 'InpAllowRealAccount=false' mt5-bridge/StormCodex_LocalBridge.mq5

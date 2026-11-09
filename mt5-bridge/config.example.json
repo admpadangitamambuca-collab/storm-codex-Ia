@@ -1,0 +1,13 @@
+{
+  "appUrl": "https://SEU-SITE.netlify.app/",
+  "port": 80,
+  "secret": "SUBSTITUA_POR_TOKEN_ALEATORIO_DE_64_CARACTERES",
+  "executionEnabled": false,
+  "symbolMap": {
+    "XAUUSD": "XAUUSD",
+    "EURUSD": "EURUSD",
+    "USDJPY": "USDJPY",
+    "AUDUSD": "AUDUSD"
+  },
+  "headless": false
+}
