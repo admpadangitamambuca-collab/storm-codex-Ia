@@ -8,7 +8,7 @@
 #include <Trade/Trade.mqh>
 CTrade trade;
 
-input string InpBridgeURL="http://127.0.0.1:8765";
+input string InpBridgeURL="http://127.0.0.1";
 input string InpBridgeToken="COLE_TOKEN_LOCAL_COM_32_OU_MAIS_CARACTERES";
 input bool   InpEnableTrading=false;           // CONFIRMACAO EXPLICITA (DEMO PRIMEIRO)
 input bool   InpAllowRealAccount=false;        // SEGUNDA TRAVA: REAL DESLIGADO
