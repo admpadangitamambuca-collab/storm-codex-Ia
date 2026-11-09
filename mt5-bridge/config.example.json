@@ -8,5 +8,6 @@
     "EURUSD": "EURUSD",
     "USDJPY": "USDJPY",
     "AUDUSD": "AUDUSD"
-  }
+  },
+  "headless": false
 }
