@@ -29,13 +29,13 @@
    Copie o resultado e substitua o campo \`secret\` em **config.json**. Mantenha esse arquivo somente no PC.
 4. Substitua \`appUrl\` pelo endereço **HTTPS do seu Storm Códex IA publicado**. Use a versão deste ramo no seu ambiente de teste; o site principal não recebe estes arquivos automaticamente. Se o login do site aparecer, autentique-se manualmente na janela aberta pela ponte. **Nunca forneça senha da corretora ao site ou à ponte.**
 5. Ajuste \`symbolMap\` aos nomes reais **da sua corretora** no MT5, por exemplo \`XAUUSD\` ou um símbolo com sufixo. Não invente ativos.
-6. Execute \`npm start\`. O Chromium separado abrirá e a ponte anunciará \`127.0.0.1:8765\`. No mesmo computador, abra **http://127.0.0.1:8765/status**. A ponte ainda estará com execução desligada.
+6. Execute \`npm start\`. O Chromium separado abrirá e a ponte anunciará \`127.0.0.1\`. No mesmo computador, abra **http://127.0.0.1/status**. A ponte ainda estará com execução desligada.
 7. Se o app exigir login, conclua-o uma vez com \`headless:false\`. Depois, poderá trocar para \`headless:true\` e reiniciar para manter somente o **processo da ponte** e seu navegador controlado em segundo plano. Não é necessário deixar o navegador do celular aberto. **Não feche o processo Node nem desligue o Windows.**
 
 ## Conectar o MT5 em conta demonstrativa
 
 1. No MetaTrader 5 Windows, entre em sua **conta demo**. Abra o MetaEditor (\`F4\`) e crie/abra \`MQL5/Experts/StormCodex_LocalBridge.mq5\` com o conteúdo do arquivo deste ramo. Compile com \`F7\`. **A compilação MQL5 ainda precisa ser confirmada no Windows.**
-2. Em **Ferramentas → Opções → Expert Advisors**, inclua \`http://127.0.0.1:8765\` em **Permitir WebRequest para as URLs listadas**. Ative negociação algorítmica somente quando decidir testar ordens demo.
+2. Em **Ferramentas → Opções → Expert Advisors**, inclua \`http://127.0.0.1\` em **Permitir WebRequest para as URLs listadas**. Ative negociação algorítmica somente quando decidir testar ordens demo.
 3. Anexe o EA a um gráfico, configure \`InpBridgeToken\` com o **mesmo token secreto** do \`config.json\`. Deixe \`InpEnableTrading=false\` e \`InpAllowRealAccount=false\` para testar primeiro a conexão.
 4. No PC, no Copy Trade, clique **Conectar MetaTrader 5 → Verificar ponte neste computador**. Ou consulte o JSON \`/status\` local. A presença de \`mt5Connected=true\` significa somente que houve comunicação; **não significa que o robô já tenha operado**.
 5. Só depois de confirmar conexão, dados e filtros em demo, altere \`executionEnabled\` para \`true\` em seu \`config.json\`, reinicie o Node e reanexe o EA com \`InpEnableTrading=true\`. A conta deve continuar **DEMO**. A conta real permanece proibida pelo segundo interruptor \`InpAllowRealAccount=false\`.
