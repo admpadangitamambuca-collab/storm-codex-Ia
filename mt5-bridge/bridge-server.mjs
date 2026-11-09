@@ -112,7 +112,7 @@ async function start() {
  try {
    const {chromium}=await import('playwright');
    ctx=await chromium.launchPersistentContext(path.join(runtime,'browser-profile'),{
-     headless:false,viewport:{width:1180,height:780},acceptDownloads:false
+     headless:cfg.headless===true,viewport:{width:1180,height:780},acceptDownloads:false
    });
    page=ctx.pages()[0]||await ctx.newPage();
    page.on('close',()=>{appReady=false;lastError='Janela da analise foi fechada; reinicie a ponte.';});
