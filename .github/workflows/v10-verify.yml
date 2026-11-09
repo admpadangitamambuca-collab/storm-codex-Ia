@@ -21,3 +21,14 @@ jobs:
           node-version: '22'
       - name: Check dual-engine v10 and regression invariants
         run: node tests/v10_verify.cjs
+      - name: Validate deploy ZIP and editable HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP="versoes/v10.0/Storm_Codex_IA_v10_DUAL_ENGINE_NETLIFY.zip"
+          unzip -t "$ZIP"
+          unzip -p "$ZIP" index.html | cmp - index.html
+          unzip -p "$ZIP" engine/v10_dual_core.js | cmp - engine/v10_dual_core.js
+          unzip -p "$ZIP" engine/v10_comparison_ui.js | cmp - engine/v10_comparison_ui.js
+          cmp index.html versoes/v10.0/Storm_Codex_IA_v10_DUAL_ENGINE_EDITAVEL.html
+          echo "ZIP e HTML editável coincidem com a versão v10 validada."
