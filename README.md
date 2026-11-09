@@ -1,37 +1,24 @@
-# Storm Códex IA — código-fonte completo e versionado
+# Storm Códex IA v10.0 — Dual Engine Evolution
 
-**Versão principal atualizada em 07/11/2026: base v9.9 + revisão Turbo contextual / Copy Trade >83.**
+Base preservada: **v9.9 Turbo contextual e Copy Trade score estritamente superior a 83/100**.
 
-- `index.html`: app autossuficiente na raiz, atualizado com o código da ramificação `feature/turbo-contextual-20261107`.
-- [**Baixar ZIP Netlify — Turbo contextual + Copy >83**](https://github.com/admpadangitamambuca-collab/storm-codex-Ia/raw/refs/heads/release/turbo-contextual-copy83-20261107/Storm_Codex_IA_TURBO_CONTEXTUAL_COPY83_NETLIFY.zip) — contém `index.html` na raiz e `LEIA_ME.txt`.
-- [Cópia HTML editável no histórico](versoes/turbo-contextual-copy83-20261107/Storm_Codex_IA_TURBO_CONTEXTUAL_COPY83_EDITAVEL.html).
-- [Ramificação de distribuição do ZIP](https://github.com/admpadangitamambuca-collab/storm-codex-Ia/tree/release/turbo-contextual-copy83-20261107).
-- A revisão aprimora a leitura contextual do Turbo (tendência, consolidação, rompimento e volatilidade), aumenta/preenche o raio e muda o Copy Trade para **score Turbo estritamente >83/100, sem segundo score do Clássico ou veto seletivo**. Mantém pré-requisitos técnicos de candles válidos, níveis coerentes e fonte recente; o Copy continua apenas simulado.
-- O Clássico Precision, as animações, os históricos e os arquivos legados foram preservados. O app usa serviço público gratuito e **não envia ordens reais**.
-- Foram verificados os 23 scripts do HTML quanto à sintaxe e a existência do pacote no GitHub. Não houve validação com mercado/feed real nesta revisão.
+## Entrega
+- `index.html`: app Netlify autossuficiente com 25 scripts; Clássico e Turbo integrados.
+- `engine/v10_dual_core.js`: funções causais/puras, pesquisa de pivôs confirmados e zonas, false breaks, pesos adaptativos e desconto de evidências correlacionadas.
+- `engine/v10_comparison_ui.js`: painel comparativo com amostras prospectivas por ativo/timeframe, treino/teste temporal 70/30 e CSV.
+- `tests/v10_dual.test.cjs`: testes de não lookahead, não mutação, treino separado, sintaxe e regra Copy >83.
+- ZIP Netlify: será vinculado nesta ramificação após empacotamento; o ZIP contém `index.html` na raiz.
 
-## Histórico anterior
+## Clássico v10.0
+Auditoria adicional de pivôs de 2 velas, zonas com idade/contagem, rejeição/reteste e falsos rompimentos. Penalidade por estruturas contraditórias e Elliott em conflito. Confirmações sensíveis ao timeframe. Mantidos filtro estrito XAUUSD >US$3 em 1 vela, R:R mínimo, fonte atual, candles fechados e EVITAR/operacional.
 
-- `index.html`: aplicativo autossuficiente, pronto para Netlify.
-- `versoes/v9.7/Storm_Codex_IA_v9_7_NETLIFY.zip`: pacote autossuficiente do Netlify Drop.
-- `versoes/v9.7/Storm_Codex_IA_v9_7_EDITAVEL.html`: cópia editável igual à raiz.
-- `versoes/v9.7/LEIA_ME_v9_7.md`: alterações e ressalvas.
-- `versoes/v9.6/Storm_Codex_IA_v9_6_NETLIFY.zip`: pacote completo com `index.html` e instruções, para Netlify Drop.
-- `versoes/v9.6/Storm_Codex_IA_v9_6_EDITAVEL.html`: cópia editável, idêntica à raiz.
-- `versoes/v9.6/LEIA_ME_v9_6.md`: documentação e limitações.
-- `versoes/v9.5/`: cópia da v9.5 original com quatro gráficos e score acima de 80.
-- `versoes/v9.4/`: cópia da v9.4 Turbo Equilibrado.
+## Turbo v10.0
+Desconta pontuação de EMA/estrutura e FVG/Fibonacci quando correlacionadas, altera relevância por regime, verifica direção por pivôs próprios, e reforça leitura de armadilhas com candles fechados. O gate original Turbo permanece. O **Copy Trade usa somente score Turbo >83/100** como critério de seleção, além de pré-requisitos técnicos de OHLC/níveis; não recebeu um veto do Clássico.
 
-## Regras para manter a integridade do projeto
+## Desempenho, limites e integridade
+O comparativo só lê resultados observados após sinais, no armazenamento local do navegador, com motor de resultado OHLC anterior. Status pendente, ambíguo, expirado e histórico importado NÃO contam como acertos. Condições melhores são escolhidas apenas com os primeiros 70%; os 30% finais são avaliação cronológica descritiva. Métricas exigem ao menos 30 encerramentos válidos. Scores não são probabilidades calibradas e métricas de paper trading não representam lucro real. A versão inicia com histórico v10 vazio por conta de chaves próprias; dados v9.9 não foram excluídos.
 
-- Preservar o Clássico Precision e o Turbo Equilibrado e seus bloqueios de segurança.
-- A simulação Copy Trade opera com dupla pontuação: Turbo >=78 e motor original >=65, em vela fechada válida.
-- Quatro ativos monitorados com gráfico individual selecionável: XAUUSD, EURUSD, USDJPY e AUDUSD.
-- Banca inicial fictícia de US$100, atualizada por takes e stops encerrados de operações prospectivas.
-- Sem ordens reais ou integração com corretora. Nenhuma promessa de lucro, probabilidade estatística ou acurácia validada.
-- Feed público e navegador aberto necessários para registrar operações. Observações locais não migram automaticamente entre dispositivos.
-- Preservar as versões anteriores na árvore GitHub; criar novas versões sem sobrescrever backups.
+Sem nova API, serviço pago, backend obrigatório, alteração de fontes, envio de ordens reais ou componentes da integração local MT5.
 
-## Validação efetuada (v9.6)
-
-Compilação de sintaxe dos scripts; verificação de não modificação dos 20 scripts originais e testes isolados da regra de dupla confirmação, incluindo limites 78 e 65, e evolução da banca. Navegador real e feed Biquote ao vivo não foram validados na entrega.
+## Validação
+`node tests/v10_dual.test.cjs` e GitHub Actions (quando disponibilizado). A sintaxe dos scripts pode ser validada offline; a experiência visual e o feed ao vivo requerem teste no navegador. Não alegar taxa de acerto melhorada sem amostras prospectivas.
