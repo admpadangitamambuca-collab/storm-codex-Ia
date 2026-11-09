@@ -47,7 +47,7 @@ function render(){
  row('Validação cronológica 70/30',vals(v=>v.validSample
   ?'Treino '+v.trainN+' ('+fmt(v.trainR,2)+' R) / Teste '+v.testN+' ('+fmt(v.testR,2)+' R)'
   :'Aguardando 30 encerramentos válidos'))+
- row('Setup com melhor média',vals(v=>v.validSample&&v.best?esc(v.best.name)+' · '+fmt(v.best.meanR,2)+' R ('+v.best.n+')':'—'))+
+ row('Setup selecionado no treino',vals(v=>v.validSample&&v.best?esc(v.best.name)+' · treino '+fmt(v.best.meanR,2)+' R ('+v.best.n+') · teste '+(v.best.holdoutN?fmt(v.best.holdoutR,2)+' R ('+v.best.holdoutN+')':'sem amostra'):'—'))+
  '</tbody>';
  const total=both.reduce((s,x)=>s+x.n,0);
  if(status)status.textContent=total?'Indicadores calculados apenas com observações locais encerradas.':'Nenhuma amostra prospectiva encerrada nesta seleção.';
