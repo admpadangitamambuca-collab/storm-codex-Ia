@@ -17,7 +17,8 @@ if(typeof cfg.appUrl!=='string' || !/^https:\/\/|^http:\/\/(localhost|127\.0\.0\
   throw Error('appUrl precisa ser URL https do seu app ou localhost. Confira config.json.');
 if(typeof cfg.secret!=='string' || cfg.secret.length<32 || /CHANGE|SUBSTITUA|EXEMPLO/.test(cfg.secret))
   throw Error('Gere um token local aleatorio (32+ caracteres) em config.json. Nunca publique esse arquivo.');
-cfg.port=Number.isInteger(cfg.port)&&cfg.port>=1024&&cfg.port<65536?cfg.port:8765;
+if(cfg.port!==80)throw Error('MT5 WebRequest HTTP usa porta 80. Configure port:80.');
+cfg.port=80;
 cfg.executionEnabled=cfg.executionEnabled===true;
 cfg.symbolMap=cfg.symbolMap&&typeof cfg.symbolMap==='object'?cfg.symbolMap:{};
 const allowedOrigin=new URL(cfg.appUrl).origin;
