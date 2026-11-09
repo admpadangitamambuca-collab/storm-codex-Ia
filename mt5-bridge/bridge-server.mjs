@@ -22,6 +22,7 @@ cfg.executionEnabled=cfg.executionEnabled===true;
 cfg.symbolMap=cfg.symbolMap&&typeof cfg.symbolMap==='object'?cfg.symbolMap:{};
 const allowedOrigin=new URL(cfg.appUrl).origin;
 const queue=new TradeQueue(path.join(runtime,'queue.json'));
+const monitorStartedAt=Date.now();
 let page=null,ctx=null,scanning=false,lastScanAt=0,lastError='',appReady=false,lastEAAt=0,lastEAType='desconhecida';
 fs.mkdirSync(runtime,{recursive:true});
 function log(...parts) {console.log(new Date().toISOString(),...parts);}
@@ -101,6 +102,8 @@ async function collect() {
    if(!appReady) return;
    let added=0;
    for(const trade of data.trades) {
+     // Nunca transforma registros existentes antes da partida em ordens.
+     if(!(trade.recordedAt>monitorStartedAt))continue;
      const sig=assessTrade(trade,data.feeds,Date.now());
      if(sig && queue.add(sig)) {added++;log('Novo candidato validado:',sig.key,sig.asset,sig.tf,sig.side,'score',sig.score);}
    }
