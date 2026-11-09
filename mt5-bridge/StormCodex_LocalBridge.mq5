@@ -131,6 +131,9 @@ void ProcessSignal(const string payload) {
     entry<=0 || sl<=0 || tp<=0 || sentMs<=0){
   Print("Storm MT5: payload rejeitado.");return;
  }
+ // Segunda trava de frescor no proprio computador, mesmo com fila corrompida.
+ long localMs=(long)TimeLocal()*1000;
+ if(sentMs>localMs+30000 || localMs-sentMs>120000){Ack(key,"rejected","sinal_expirado");return;}
  const string tag="SC"+key;
  if(AlreadySeen(key,tag)){Ack(key,"already","dedup");return;}
  if(!SymbolSelect(sym,true)){Ack(key,"rejected","simbolo_indisponivel");return;}
