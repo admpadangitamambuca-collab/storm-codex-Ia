@@ -35,19 +35,22 @@ function render(){
  const api=window.StormDualCore100,table=$('stormV100Table'),status=$('stormV100Status');
  if(!api||!table)return;
  lastData=selected();
- const a=api.summarize(lastData[0],'classic'),b=api.summarize(lastData[1],'turbo'),both=[a,b];
+ const costR=Math.max(0,Math.min(2,Number($('stormV100Cost')?.value)||0));
+ const a=api.summarize(lastData[0],'classic',{costR}),b=api.summarize(lastData[1],'turbo',{costR}),both=[a,b];
  const vals=fn=>both.map((v,i)=>fn(v,i));
  table.innerHTML='<thead><tr><th>Métrica</th>'+COLS.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+
  row('Encerradas, válidas',vals(v=>'<b>'+v.n+'</b>'))+
  row('Pendentes',vals(v=>String(v.pending)))+
  row('Excluídas / ambíguas / expiradas',vals(v=>String(v.excluded)))+
  row('Acerto observado',vals(v=>v.validSample?pct(v.winRate):'Amostra insuficiente'))+
- row('Expectativa média (R)',vals(v=>v.validSample?fmt(v.meanR,2)+' R':'—'))+
+ row(costR?'Expectativa média após custo estimado':'Expectativa média bruta (R)',vals(v=>v.validSample?fmt(v.meanR,2)+' R':'—'))+
  row('Fator de lucro em R',vals(v=>v.validSample?multiple(v.profitFactor):'—'))+
  row('Validação cronológica 70/30',vals(v=>v.validSample
   ?'Treino '+v.trainN+' ('+fmt(v.trainR,2)+' R) / Teste '+v.testN+' ('+fmt(v.testR,2)+' R)'
   :'Aguardando 30 encerramentos válidos'))+
  row('Setup selecionado no treino',vals(v=>v.validSample&&v.best?esc(v.best.name)+' · treino '+fmt(v.best.meanR,2)+' R ('+v.best.n+') · teste '+(v.best.holdoutN?fmt(v.best.holdoutR,2)+' R ('+v.best.holdoutN+')':'sem amostra'):'—'))+
+ row('Regime com melhor média no treino',vals(v=>v.validSample&&v.bestRegime?esc(v.bestRegime.name)+' · treino '+fmt(v.bestRegime.meanR,2)+' R · teste '+(v.bestRegime.holdoutN?fmt(v.bestRegime.holdoutR,2)+' R':'sem amostra'):'—'))+
+ row('Timeframe com melhor média no treino',vals(v=>v.validSample&&v.bestTF?esc(v.bestTF.name)+' · treino '+fmt(v.bestTF.meanR,2)+' R · teste '+(v.bestTF.holdoutN?fmt(v.bestTF.holdoutR,2)+' R':'sem amostra'):'—'))+
  '</tbody>';
  const total=both.reduce((s,x)=>s+x.n,0);
  if(status)status.textContent=total?'Indicadores calculados apenas com observações locais encerradas.':'Nenhuma amostra prospectiva encerrada nesta seleção.';
@@ -56,10 +59,10 @@ function render(){
 }
 function exportCsv(){
  const [classic,turbo]=lastData;
- const rows=[['motor','ativo','timeframe','data_utc','direcao','score','setup','status','entrada','stop','alvo_1']];
+ const rows=[['motor','ativo','timeframe','data_utc','direcao','score','setup','regime','status','entrada','stop','alvo_1']];
  for(const [i,data] of [classic,turbo].entries())for(const r of data){
   rows.push([i?'Turbo':'Clássico',r.asset,r.tf,new Date(r.closedAt||r.t).toISOString(),r.side,r.score,
-    r.setup||r.strategy||'',r.status,r.entry??r.price??'',r.stop??r.stopDist??'',
+    r.setup||r.strategy||'',r.regime||'',r.status,r.entry??r.price??'',r.stop??r.stopDist??'',
     r.targets?.[0]??r.target??'']);
  }
  const cell=x=>{const s=String(x??''),safe=/^[=+\-@\t\r]/.test(s)?"'"+s:s;return '"'+safe.replace(/"/g,'""')+'"';};
@@ -75,7 +78,7 @@ function init(){
  style.textContent='#stormV100Panel{margin:22px 0;padding:21px;border-color:#4e6374;background:linear-gradient(140deg,#111d2c,#111722)}'+
  '#stormV100Panel h2{font-size:19px;margin:0 0 6px}#stormV100Panel p{color:#b9c8db;line-height:1.6;font-size:12px}'+
  '#stormV100Panel .controls{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:15px 0}'+
- '#stormV100Panel select{padding:10px;border:1px solid #46566a;border-radius:9px;background:#152338;color:#f0f4fa}'+
+ '#stormV100Panel select,#stormV100Panel input{padding:10px;border:1px solid #46566a;border-radius:9px;background:#152338;color:#f0f4fa}#stormV100Cost{width:82px}'+
  '#stormV100Panel .tablewrap{overflow:auto;width:100%}#stormV100Panel table{border-collapse:collapse;width:100%;min-width:610px;font-size:12px}'+
  '#stormV100Panel th,#stormV100Panel td{border-bottom:1px solid #2a3647;padding:11px;text-align:left;vertical-align:middle}'+
  '#stormV100Panel thead th{color:#f0c679}#stormV100Panel tbody th{color:#cbd5e3;font-weight:600;width:33%}'+
@@ -87,16 +90,17 @@ function init(){
  '<p>Comparação técnica entre Clássico Precision e Turbo Equilibrado. Apenas operações observadas após o sinal, por motor, neste navegador. Os motores mantêm regras e históricos separados.</p>'+
  '<div class="controls"><label for="stormV100Asset">Ativo</label><select id="stormV100Asset">'+
  '<option value="ALL">Todos os ativos</option>'+ASSETS.map(x=>'<option value="'+x+'">'+x+'</option>').join('')+'</select>'+
- '<label for="stormV100Tf">Período</label><select id="stormV100Tf">'+TFS.map(x=>'<option value="'+x+'">'+x+'</option>').join('')+'</select>'+
+ '<label for="stormV100Tf">Período</label><select id="stormV100Tf">'+TFS.map(x=>'<option value="'+x+'">'+x+'</option>').join('')+'</select>'+ '<label for="stormV100Cost">Custo estimado por operação (R)</label><input id="stormV100Cost" type="number" min="0" max="2" step="0.01" value="0.00" inputmode="decimal" aria-label="Custo estimado, ida e volta, em unidades de risco R">'+
  '<button id="stormV100Refresh" type="button" class="btn tiny">Atualizar métricas</button>'+
  '<button id="stormV100Export" type="button" class="btn tiny">Exportar CSV</button></div>'+
  '<p id="stormV100Status" role="status"></p><div class="tablewrap"><table id="stormV100Table"></table></div>'+
  '<div id="stormV100SelfTest"></div>'+
- '<p><b>Leitura crítica:</b> scores são heurísticos, não probabilidades calibradas. Win rate e R dependem do critério de resultado simulado por OHLC, sem execução, spread efetivo ou slippage comprovados. Uma mesma vela que toca stop e alvo é ambígua e não conta como acerto. A divisão 70/30 é temporal e descritiva; o teste não deve ser usado para escolher parâmetros com informação futura. Amostras pequenas não autorizam inferência estatística.</p>';
+ '<p><b>Leitura crítica:</b> scores são heurísticos, não probabilidades calibradas. Win rate e R dependem do critério de resultado simulado por OHLC. O custo opcional é uma hipótese por operação em R, não spread efetivo, comissão ou slippage comprovados. Uma mesma vela que toca stop e alvo é ambígua e não conta como acerto. A divisão 70/30 é temporal e descritiva; o teste não deve ser usado para escolher parâmetros com informação futura. Amostras pequenas não autorizam inferência estatística.</p>';
  document.querySelector('.shell').appendChild(panel);
  $('stormV100Asset').addEventListener('change',()=>{
    $('stormV100Tf').disabled=$('stormV100Asset').value==='ALL';render();});
  $('stormV100Tf').addEventListener('change',render);
+ $('stormV100Cost').addEventListener('input',render);
  $('stormV100Refresh').addEventListener('click',render);
  $('stormV100Export').addEventListener('click',exportCsv);
  window.addEventListener('vortex83-data',render);
