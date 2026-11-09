@@ -139,33 +139,43 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
   return {version:VERSION,components:rows,independentDirection:s.direction,directionConfidence:s.confidence,
     structure:s,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
 }
-function summarize(rows,engine){
+function summarize(rows,engine,{costR=0}={}){
+  costR=finite(costR)?clamp(costR,0,2):0;
   const relevant=(rows||[]).filter(r=>r&&r.origin===(engine==='classic'?'observed_precision':'observed_turbo_selective')&&
     (engine==='classic'?r.approved:r.mode==='live'));
   const ended=relevant.filter(r=>engine==='classic'?['win','loss'].includes(r.status):['tp1','tp2','tp3','stop'].includes(r.status))
     .sort((a,b)=>a.closedAt-b.closedAt||a.t-b.t);
-  const per=r=>{
+  const gross=r=>{
     if(engine==='classic')return r.status==='loss'?-1:finite(r.target)&&finite(r.stop)&&r.stop>0?r.target/r.stop:NaN;
     if(r.status==='stop')return -1;
-    const t=finite(r.entry)&&finite(r.stop)?Math.abs(r.entry-r.stop):0;
-    const target=finite(r.targets?.[0])?Math.abs(r.targets[0]-r.entry):NaN;
-    return t>0&&finite(target)?target/t:NaN;
+    const risk=finite(r.entry)&&finite(r.stop)?Math.abs(r.entry-r.stop):0;
+    const idx=Math.max(0,['tp1','tp2','tp3'].indexOf(r.status));
+    const target=finite(r.targets?.[idx])?r.targets[idx]:r.targets?.[0];
+    return risk>0&&finite(target)?Math.abs(target-r.entry)/risk:NaN;
   };
-  const valid=ended.map(r=>({...r,value:per(r)})).filter(r=>finite(r.value)&&r.value>-10&&r.value<30);
-  const n=valid.length,wins=valid.filter(x=>x.value>0).length;
+  const valid=ended.map(r=>{const grossR=gross(r);return {...r,grossR,value:grossR-costR};})
+    .filter(r=>finite(r.grossR)&&r.grossR>-10&&r.grossR<30);
+  const n=valid.length,wins=valid.filter(x=>x.grossR>0).length;
   const pos=valid.reduce((s,x)=>s+Math.max(0,x.value),0),neg=valid.reduce((s,x)=>s+Math.min(0,x.value),0);
   const split=Math.floor(n*.7),train=valid.slice(0,split),test=valid.slice(split);
   const avg=a=>a.length?a.reduce((s,x)=>s+x.value,0)/a.length:null;
-  // Selecionar o melhor setup SOMENTE no treino; holdout cronológico intocado.
-  const grouped=new Map();
-  for(const r of train){const key=String(r.setup||r.strategy||'não identificado'),g=grouped.get(key)||[];g.push(r);grouped.set(key,g);}
-  const best=[...grouped.entries()].filter(x=>x[1].length>=10).map(([name,a])=>({name,n:a.length,meanR:avg(a)}))
-    .sort((a,b)=>b.meanR-a.meanR)[0]||null;
-  if(best){const holdout=test.filter(r=>String(r.setup||r.strategy||'não identificado')===best.name);best.holdoutN=holdout.length;best.holdoutR=avg(holdout);}
+  // Grupos selecionados SOMENTE no treino; holdout permanece cronológico.
+  const group=(key,minN)=>{
+    const grouped=new Map();
+    for(const r of train){const label=String(key(r)||'não informado'),g=grouped.get(label)||[];g.push(r);grouped.set(label,g);}
+    const best=[...grouped.entries()].filter(x=>x[1].length>=minN).map(([name,a])=>({name,n:a.length,meanR:avg(a)}))
+      .sort((a,b)=>b.meanR-a.meanR)[0]||null;
+    if(best){const holdout=test.filter(r=>String(key(r)||'não informado')===best.name);
+      best.holdoutN=holdout.length;best.holdoutR=avg(holdout);}
+    return best;
+  };
+  const best=group(r=>r.setup||r.strategy,10),bestRegime=group(r=>r.regime,8),bestTF=group(r=>r.tf,8);
   return {n,pending:relevant.filter(x=>x.status==='pending').length,excluded:relevant.length-ended.length,
-    winRate:n?wins/n:null,meanR:avg(valid),profitFactor:neg<0?pos/Math.abs(neg):pos>0?Infinity:null,
-    trainN:train.length,testN:test.length,trainR:avg(train),testR:avg(test),best,
-    validSample:n>=30&&test.length>=9,source:'Somente registros prospectivos observados no navegador; custos reais não aferidos'};
+    winRate:n?wins/n:null,meanR:avg(valid),grossMeanR:n?valid.reduce((x,y)=>x+y.grossR,0)/n:null,
+    costR,profitFactor:neg<0?pos/Math.abs(neg):pos>0?Infinity:null,
+    trainN:train.length,testN:test.length,trainR:avg(train),testR:avg(test),
+    best,bestRegime,bestTF,validSample:n>=30&&test.length>=9,
+    source:'Somente registros prospectivos observados no navegador; custo em R é estimativa do usuário, não execução aferida'};
 }
 function selfTest(){
   const tf=300000,make=(n,s=100)=>Array.from({length:n},(_,i)=>{
