@@ -1561,6 +1561,8 @@ function classicReview({bars,at,atr,side,tf='M5',waves,pa,mtf,market}={}){
   // Escalas curtas exigem confirmação de contexto; H1 aceita menos ruído microestrutural.
   if(tf==='M1'&&mtf?.available===0){delta-=2;messages.push('M1 sem comparações temporais válidas');}
   if(tf==='H1'&&s.breakout)delta+=1;
+  if(tf==='M5'&&mtf?.available>=2&&mtf.weighted>.4)delta+=1;
+  if(tf==='M15'&&s.zone?.grade>=3&&pa?.rejection)delta+=1;
   if(market?.sideways&&!s.retest&&!pa?.rejection&&s.direction!==side)delta-=1;
   return {version:VERSION,delta:clamp(delta,-9,5),structure:s,messages};
 }
@@ -1623,10 +1625,12 @@ function summarize(rows,engine){
   const pos=valid.reduce((s,x)=>s+Math.max(0,x.value),0),neg=valid.reduce((s,x)=>s+Math.min(0,x.value),0);
   const split=Math.floor(n*.7),train=valid.slice(0,split),test=valid.slice(split);
   const avg=a=>a.length?a.reduce((s,x)=>s+x.value,0)/a.length:null;
+  // Selecionar o melhor setup SOMENTE no treino; holdout cronológico intocado.
   const grouped=new Map();
-  for(const r of valid){const key=String(r.setup||r.strategy||'não identificado'),g=grouped.get(key)||[];g.push(r);grouped.set(key,g);}
+  for(const r of train){const key=String(r.setup||r.strategy||'não identificado'),g=grouped.get(key)||[];g.push(r);grouped.set(key,g);}
   const best=[...grouped.entries()].filter(x=>x[1].length>=10).map(([name,a])=>({name,n:a.length,meanR:avg(a)}))
     .sort((a,b)=>b.meanR-a.meanR)[0]||null;
+  if(best){const holdout=test.filter(r=>String(r.setup||r.strategy||'não identificado')===best.name);best.holdoutN=holdout.length;best.holdoutR=avg(holdout);}
   return {n,pending:relevant.filter(x=>x.status==='pending').length,excluded:relevant.length-ended.length,
     winRate:n?wins/n:null,meanR:avg(valid),profitFactor:neg<0?pos/Math.abs(neg):pos>0?Infinity:null,
     trainN:train.length,testN:test.length,trainR:avg(train),testR:avg(test),best,
@@ -4545,7 +4549,7 @@ function render(){
  row('Validação cronológica 70/30',vals(v=>v.validSample
   ?'Treino '+v.trainN+' ('+fmt(v.trainR,2)+' R) / Teste '+v.testN+' ('+fmt(v.testR,2)+' R)'
   :'Aguardando 30 encerramentos válidos'))+
- row('Setup com melhor média',vals(v=>v.validSample&&v.best?esc(v.best.name)+' · '+fmt(v.best.meanR,2)+' R ('+v.best.n+')':'—'))+
+ row('Setup selecionado no treino',vals(v=>v.validSample&&v.best?esc(v.best.name)+' · treino '+fmt(v.best.meanR,2)+' R ('+v.best.n+') · teste '+(v.best.holdoutN?fmt(v.best.holdoutR,2)+' R ('+v.best.holdoutN+')':'sem amostra'):'—'))+
  '</tbody>';
  const total=both.reduce((s,x)=>s+x.n,0);
  if(status)status.textContent=total?'Indicadores calculados apenas com observações locais encerradas.':'Nenhuma amostra prospectiva encerrada nesta seleção.';
