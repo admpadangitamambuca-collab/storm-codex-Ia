@@ -4502,7 +4502,7 @@ function init(){
   var label=document.getElementById('stormMT5State');label.textContent='Verificando serviço local…';
   var ctrl=new AbortController(),timeout=setTimeout(function(){ctrl.abort();},3500);
   try{
-   var resp=await fetch('http://127.0.0.1:8765/status',{cache:'no-store',signal:ctrl.signal});
+   var resp=await fetch('http://127.0.0.1/status',{cache:'no-store',signal:ctrl.signal});
    if(!resp.ok)throw Error('HTTP '+resp.status);
    var s=await resp.json();if(s.bridge!=='storm-mt5-local-v1')throw Error('Ponte não reconhecida');
    label.textContent=(s.appConnected&&s.mt5Connected?'Ponte e MT5 conectados. ':'Conexão incompleta. ')+
