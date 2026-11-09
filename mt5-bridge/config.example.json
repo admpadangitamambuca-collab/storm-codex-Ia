@@ -1,6 +1,6 @@
 {
   "appUrl": "https://SEU-SITE.netlify.app/",
-  "port": 8765,
+  "port": 80,
   "secret": "SUBSTITUA_POR_TOKEN_ALEATORIO_DE_64_CARACTERES",
   "executionEnabled": false,
   "symbolMap": {
