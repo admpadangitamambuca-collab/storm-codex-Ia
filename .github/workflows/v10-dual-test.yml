@@ -1,0 +1,17 @@
+name: V10 Dual Engine Tests
+on:
+  push:
+    branches: [feature/v10-dual-engine-evolution-20261109]
+  pull_request:
+    paths: ['index.html','engine/**','tests/**','.github/workflows/v10-dual-test.yml']
+jobs:
+  node-regression:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/v10_dual.test.cjs
