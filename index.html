@@ -4289,7 +4289,7 @@ function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','t
 }
 window.StormCopyTrade95={version:'copy-turbo-83-2026-11-07',getTrades:loadTrades,getStatus:()=>({started,scanning,scanError,lastScanAt,scoreThreshold:'>83',simulatedOnly:true}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
  // Funções puras para auditoria e testes. Não executam ordens.
- lotPnl,settleOne,aggregate,scanNow:()=>{if(!started)started=true;return scan(true)}};
+ lotPnl,settleOne,aggregate,scanNow:()=>{if(!started)started=true;return scan(true)},scanScheduled:()=>{if(!started)started=true;return scan(false)}};
 window.StormCopyTrade96=window.StormCopyTrade95;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureUI,{once:true});else ensureUI();
 })();
@@ -4469,4 +4469,51 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
-</script></body></html>
+</script><style id="storm-mt5-css">
+#stormMT5Pane{margin:0 0 16px;padding:16px;border:1px solid #51657b;border-radius:14px;background:linear-gradient(135deg,#152336,#101b2a)}
+#stormMT5Pane .storm-mt5-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+#stormMT5Pane h3{margin:2px 0 7px;font-size:16px;color:#efd19c}
+#stormMT5Pane p{margin:5px 0 10px;color:#b9c7d9;font-size:12px;line-height:1.6}
+#stormMT5Pane button{border:1px solid #86663e;color:#f7dfb5;background:#2a281f;padding:10px 13px;border-radius:10px;cursor:pointer}
+#stormMT5Details{margin-top:13px;border-top:1px solid #334356;padding-top:12px}
+#stormMT5Details[hidden]{display:none!important}
+#stormMT5State{font-weight:750;color:#f0c16d}
+</style>
+<script id="storm-mt5-local-ui">
+(function(){'use strict';
+function init(){
+ var root=document.getElementById('stormCopyTrade');
+ if(!root){setTimeout(init,400);return;}
+ if(document.getElementById('stormMT5Pane'))return;
+ var pane=document.createElement('section');pane.id='stormMT5Pane';
+ pane.setAttribute('aria-label','Conexao opcional MetaTrader 5 local');
+ pane.innerHTML='<div class="storm-mt5-top"><div><h3>MetaTrader 5 · conexão opcional pelo computador</h3>'+
+ '<p>O simulador continua independente. A ponte roda no computador Windows, não neste site.</p></div>'+
+ '<button id="stormMT5Toggle" type="button" aria-expanded="false">Conectar MetaTrader 5</button></div>'+
+ '<div id="stormMT5Details" hidden><p>Instale a ponte local e o robô no MT5. Não informe senha da corretora aqui.</p>'+
+ '<p id="stormMT5State" role="status">Estado: não verificado · execução desligada por padrão.</p>'+
+ '<button type="button" id="stormMT5Check">Verificar ponte neste computador</button>'+
+ '<p>Esta verificação funciona apenas no computador da ponte. Pelo celular, acompanhe no app do MT5. Use conta demo primeiro.</p></div>';
+ var h=root.querySelector('.storm-v95-head');
+ if(h)h.insertAdjacentElement('afterend',pane);else root.insertBefore(pane,root.firstChild);
+ var toggle=document.getElementById('stormMT5Toggle'),detail=document.getElementById('stormMT5Details');
+ toggle.onclick=function(){detail.hidden=!detail.hidden;toggle.setAttribute('aria-expanded',String(!detail.hidden));};
+ document.getElementById('stormMT5Check').onclick=async function(){
+  var label=document.getElementById('stormMT5State');label.textContent='Verificando serviço local…';
+  var ctrl=new AbortController(),timeout=setTimeout(function(){ctrl.abort();},3500);
+  try{
+   var resp=await fetch('http://127.0.0.1:8765/status',{cache:'no-store',signal:ctrl.signal});
+   if(!resp.ok)throw Error('HTTP '+resp.status);
+   var s=await resp.json();if(s.bridge!=='storm-mt5-local-v1')throw Error('Ponte não reconhecida');
+   label.textContent=(s.appConnected&&s.mt5Connected?'Ponte e MT5 conectados. ':'Conexão incompleta. ')+
+   'Análise: '+(s.appConnected?'ativa':'indisponível')+' · MT5: '+
+   (s.mt5Connected?'detectado ('+s.accountType+')':'não detectado')+
+   ' · Execução: '+(s.executionEnabled?'habilitada localmente':'desligada')+'.';
+  }catch(e){label.textContent='Ponte local não detectada neste dispositivo. O Copy Trade atual continua normal.';}
+  finally{clearTimeout(timeout);}
+ };
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+</body></html>
