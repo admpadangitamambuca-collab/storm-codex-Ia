@@ -5,9 +5,11 @@ Base preservada: **v9.9 Turbo contextual e Copy Trade score estritamente superio
 ## Entrega
 - `index.html`: app Netlify autossuficiente com 25 scripts; Clássico e Turbo integrados.
 - `engine/v10_dual_core.js`: funções causais/puras, pesquisa de pivôs confirmados e zonas, false breaks, pesos adaptativos e desconto de evidências correlacionadas.
-- `engine/v10_comparison_ui.js`: painel comparativo com amostras prospectivas por ativo/timeframe, treino/teste temporal 70/30 e CSV.
+- `engine/v10_comparison_ui.js`: painel comparativo com amostras prospectivas por ativo/timeframe, regime de mercado, custo opcional estimado em R, treino/teste temporal 70/30 e CSV.
 - `tests/v10_dual.test.cjs`: testes de não lookahead, não mutação, treino separado, sintaxe e regra Copy >83.
-- ZIP Netlify: será vinculado nesta ramificação após empacotamento; o ZIP contém `index.html` na raiz.
+- [ZIP Netlify completo v10.0](https://github.com/admpadangitamambuca-collab/storm-codex-Ia/raw/refs/heads/feature/v10-dual-engine-evolution-20261109/versoes/v10.0/Storm_Codex_IA_v10_DUAL_ENGINE_NETLIFY.zip): inclui `index.html` na raiz, fontes e instruções.
+- [HTML v10.0 editável](versoes/v10.0/Storm_Codex_IA_v10_DUAL_ENGINE_EDITAVEL.html).
+- [Descrição detalhada das mudanças](versoes/v10.0/README_V10.md).
 
 ## Clássico v10.0
 Auditoria adicional de pivôs de 2 velas, zonas com idade/contagem, rejeição/reteste e falsos rompimentos. Penalidade por estruturas contraditórias e Elliott em conflito. Confirmações sensíveis ao timeframe. Mantidos filtro estrito XAUUSD >US$3 em 1 vela, R:R mínimo, fonte atual, candles fechados e EVITAR/operacional.
