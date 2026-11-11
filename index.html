@@ -3592,7 +3592,7 @@ function planFor(data,struct,macro){const a=data?.state?.analysis,asset=data?.as
  const costs=data?.settings||{},perUnit=Math.max(0,Number(costs.spread)||0)+2*Math.max(0,Number(costs.slippage)||0);
  const estimatedNetRR=hasLevels?Math.max(0,baseTarget-perUnit)/(stopDist+perUnit):null;
  const mtf=Object.keys(FRAMES).map(t=>{
-  const s=data?.snapshots?.[t],fresh=s?.mode==='live'&&s?.candles?.length&&!(s?.providerStale)&&finite(s.closedAt)&&Date.now()-s.closedAt<FRAMES[t]*2+45000;
+  const s=data?.snapshots?.[t],fresh=s?.mode==='live'&&s?.candles?.length&&!(s?.providerStale)&&finite(s.closedAt)&&finite(data?.state?.closedAt)&&s.closedAt<=data.state.closedAt&&Date.now()-s.closedAt<FRAMES[t]*2+45000;
   return {tf:t,side:s?.analysis?.side||'wait',fresh:!!fresh,score:finite(s?.analysis?.score)?s.analysis.score:null};
  });
  const aligned=mtf.filter(x=>x.fresh&&x.side===side).length,available=mtf.filter(x=>x.fresh).length;
@@ -3620,7 +3620,7 @@ function detectAndSave(data,plan){if(!enabled||!plan.ready||!plan.hasData)return
   source:plan.source,mode:'live',origin:'observed_turbo',ruleVersion:'v83-turbo-1',firstFutureAt:null});
  saveLedger(data.asset,data.tf,records);
 }
-function outcome(record,candles,tf){const idx=candles.findIndex(x=>x.t===record.t);if(idx<0)return record; // sem candle inicial, não inferir.
+function outcome(record,candles,tf){const idx=candles.findIndex(x=>x.t===record.t);if(idx<0){const last=candles.at(-1)?.t,ms=FRAMES[tf];return finite(last)&&finite(ms)&&last>=record.t+(record.maxBars||MAX_HORIZON)*ms?{...record,status:'incompleto',reason:'Vela de origem ausente do histórico; resultado não verificável'}:record;} // sem candle inicial, não inferir.
  const direction=record.side==='buy'?1:-1,tfMs=FRAMES[tf],maxBars=record.maxBars||MAX_HORIZON;
  let level=0,seen=0,firstFutureAt=null,stopSeen=false,unknown=false,ambiguous=false;
  for(let j=idx+1;j<candles.length&&seen<maxBars;j++){
@@ -4653,7 +4653,7 @@ function computeForCopy(asset,tf,bar){
  // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
  // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
  // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
- const valid=Boolean(turboValid&&levels&&goldFourOK&&quality?.fresh&&
+ const valid=Boolean(turboValid&&levels&&goldFourOK&&quality?.fresh&&quality?.valid&&!quality?.gaps&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,

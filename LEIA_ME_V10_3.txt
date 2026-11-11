@@ -7,7 +7,7 @@ PUBLICAÇÃO NETLIFY
 
 INCLUSÕES
 • v10.0, v10.1 e v10.2 (motor duplo, confluência e viabilidade da entrada).
-• Auditoria de integridade de OHLC, causalidade e simulação Copy Trade.
+• Auditorias de integridade de OHLC, causalidade multi-TF, simulação Copy Trade e desfecho inconclusivo quando faltam candles de origem.
 • Precision Adaptive 10.0 integrado ao arquivo index.html.
 • Métodos técnicos públicos complementares do Turbo (RSI, MACD, Bollinger, Wyckoff, harmônicos, VWAP condicionado a volume).
 • Turbo Focus: análise objetiva, informação seletiva e diagnósticos minimizáveis, score em % do timeframe escolhido e histórico de acerto observado a partir de 30 operações encerradas.
