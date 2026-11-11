@@ -1,0 +1,27 @@
+name: Auditoria Storm Codex IA
+on:
+  push:
+    branches:
+      - fix/auditoria-geral-20261111
+  pull_request:
+    branches:
+      - main
+jobs:
+  regressao:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar engines e integridade de sinais
+        run: node --test tests/auditoria.test.cjs
+      - name: Validar integridade do ZIP de publicação
+        run: |
+          unzip -t Storm_Codex_IA_AUDITADO_NETLIFY.zip
+          mkdir -p /tmp/storm-netlify-audit
+          unzip -oq Storm_Codex_IA_AUDITADO_NETLIFY.zip -d /tmp/storm-netlify-audit
+          cmp /tmp/storm-netlify-audit/index.html index.html
+          cmp /tmp/storm-netlify-audit/sw.js sw.js

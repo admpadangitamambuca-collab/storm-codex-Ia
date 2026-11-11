@@ -1,5 +1,7 @@
 # Storm Códex IA — código-fonte completo e versionado
 
+**Auditoria de 11/11/2026:** correções de integridade disponíveis na ramificação `fix/auditoria-geral-20261111`; consultar `AUDITORIA_2026-11-11.md`. A branch mantém `index.html` na raiz para implantação, inclui `sw.js` opcional e testes Node em `tests/`.
+
 **Versão principal atualizada em 07/11/2026: base v9.9 + revisão Turbo contextual / Copy Trade >83.**
 
 - `index.html`: app autossuficiente na raiz, atualizado com o código da ramificação `feature/turbo-contextual-20261107`.
@@ -25,7 +27,7 @@
 ## Regras para manter a integridade do projeto
 
 - Preservar o Clássico Precision e o Turbo Equilibrado e seus bloqueios de segurança.
-- A simulação Copy Trade opera com dupla pontuação: Turbo >=78 e motor original >=65, em vela fechada válida.
+- **Regra vigente:** a simulação Copy Trade usa score do Turbo estritamente **>83/100** (83,00 não entra), sem segundo score do Clássico. Exige, por integridade, candle fechado recente, OHLC sem lacunas, direção e níveis de entrada/stop/take coerentes.
 - Quatro ativos monitorados com gráfico individual selecionável: XAUUSD, EURUSD, USDJPY e AUDUSD.
 - Banca inicial fictícia de US$100, atualizada por takes e stops encerrados de operações prospectivas.
 - Sem ordens reais ou integração com corretora. Nenhuma promessa de lucro, probabilidade estatística ou acurácia validada.
