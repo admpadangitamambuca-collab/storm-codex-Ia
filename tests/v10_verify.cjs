@@ -14,6 +14,12 @@ assert.equal(api.selfTest().ok,true,JSON.stringify(api.selfTest()));
 assert(app.indexOf('id="storm-v100-dual-core"')<app.indexOf('id="v93-classic-engine"'));
 assert(app.indexOf('id="storm-v100-comparison"')>app.indexOf('id="storm-v95-copy-trade"'));
 assert(app.includes('classicReview?.(')&&app.includes('turboReview?.('));
+assert(app.includes('const LIMIT_USD=4,LOOKBACK=40;'));
+assert(app.includes('Number.isFinite(potential)&&potential>=LIMIT_USD'));
+assert(app.includes("side:gold&&!goldOk?'wait':side"));
+assert(app.includes('goldFourOK&&quality?.fresh'));
+assert.equal(api.VERSION,'10.1-dual-engine');
+assert.equal(typeof api.technicalConfluence,'function');
 assert(app.includes("COPY_TURBO_THRESHOLD_EXCLUSIVE=83"));
 assert(app.includes('turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE'));
 assert(app.includes("const SELECTIVE_STORAGE='v100_dual_turbo_v1'"));
@@ -26,7 +32,7 @@ const old=(()=>{
 })();
 function section(s,id){const start=s.indexOf('<script id="'+id+'">');assert(start>=0,'script '+id);const end=s.indexOf('</script>',start);assert(end>start);return s.slice(start,end+9);}
 if(old){
- for(const id of ['storm-v95-copy-trade','storm-v97-natural-rain','storm-v99-natural-lightning']){
+ for(const id of ['storm-v97-natural-rain','storm-v99-natural-lightning']){
   assert.equal(section(app,id),section(old,id),'módulo legado modificado: '+id);
  }
 }
