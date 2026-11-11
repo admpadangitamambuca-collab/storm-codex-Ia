@@ -1,5 +1,16 @@
 # Storm Códex IA — código-fonte completo e versionado
 
+## Versão 10.4.1 — Monitor Copy Trade revisado (11/11/2026)
+
+- Integra as mudanças da 10.4 (Refresh analítico independente do fechamento) sem apagar o Clássico ou Turbo.
+- Corrige o fechamento que ocorre durante a primeira consulta após iniciar o monitor: registra a operação somente se a vela fechar **depois** de o monitor ter sido iniciado e a confluência Turbo for estritamente >83, com OHLC fresco, direção e níveis válidos. Não cria backfill.
+- Refresh do Copy e Refresh principal passam a refazer as leituras; sem novo fechamento, a pontuação é atualizada no diagnóstico, **não** cria entradas duplicadas.
+- Exibe a situação de todos os 16 pares de ativo/período para distinguir score inferior a 83, falta de OHLC e fonte atrasada.
+- Evita perder cliques de Refresh durante uma varredura; usa dois ativos por vez para limitar a espera.
+- Testes de regressão automatizados em `tests/copy-trade-smoke.cjs`, com workflow `copy-trade-regression.yml`; fixtures locais passaram no GitHub Actions. **Ainda não há teste end-to-end confirmado com cotação Biquote em tempo real nem validação do site Netlify publicado.**
+- Para carregar uma versão nova em site hospedado via Netlify Drop manual, é preciso publicar novamente o `index.html` e o `sw.js` desta versão.
+
+
 ## Versão principal 10.3.1 — Copy Trade corrigido (11/11/2026)
 
 - O simulador fictício inicia o monitor automaticamente com a abertura do site; não exige primeiro entrar na aba Copy Trade.
