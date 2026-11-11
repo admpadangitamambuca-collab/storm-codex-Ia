@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const core=require('../engine/v10_dual_core.js');
-assert.equal(core.VERSION,'10.1-dual-engine');
+assert.equal(core.VERSION,'10.2-dual-engine');
 assert.equal(core.selfTest().ok,true,'selfTest causal/regression');
 assert.equal(typeof core.technicalConfluence,'function');
 
