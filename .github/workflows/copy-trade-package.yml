@@ -1,0 +1,43 @@
+name: Build standalone Netlify ZIP 10.4.1
+on:
+  push:
+    branches:
+      - fix/copy-trade-monitor-v10-4-20261111
+permissions:
+  contents: write
+jobs:
+  package-netlify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Create self-contained ZIP
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          p=Path('versoes/v10.4.1/Storm_Codex_IA_v10_4_1_COPY_FIX_NETLIFY.zip')
+          p.parent.mkdir(parents=True, exist_ok=True)
+          text=('STORM CODEX IA 10.4.1 - COPY TRADE\\n'
+                'Envie este ZIP ao Netlify Drop ou extraia os arquivos na raiz do site.\\n'
+                'Contem index.html e sw.js, sem dependencia de versoes anteriores.\\n'
+                'Operacoes apenas ficticias, nunca envia ordens reais.\\n'
+                'Teste automatizado nao valida feed ao vivo.\\n')
+          with ZipFile(p,'w',compression=ZIP_DEFLATED,compresslevel=9) as z:
+              z.write('index.html',arcname='index.html')
+              z.write('sw.js',arcname='sw.js')
+              z.writestr('LEIA_ME.txt',text)
+          print(p,p.stat().st_size)
+          PY
+      - name: Commit deployable package to branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add versoes/v10.4.1/Storm_Codex_IA_v10_4_1_COPY_FIX_NETLIFY.zip
+          if ! git diff --cached --quiet; then
+            git commit -m "build: add standalone Netlify ZIP 10.4.1"
+            git push origin HEAD:fix/copy-trade-monitor-v10-4-20261111
+          fi
