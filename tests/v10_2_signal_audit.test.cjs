@@ -8,7 +8,8 @@ assert.equal(core.VERSION,'10.2-dual-engine');
 assert.equal(typeof core.signalAudit,'function');
 const period=300000;
 const oscillating=Array.from({length:95},(_,i)=>{
- const p=100+1.45*Math.sin(i*Math.PI/5);
+ const cycle=[0,.4,1,1.8,1.1,.2,-.5,-1.5,-.6];
+ const p=100+cycle[i%cycle.length];
  return {t:1700000000000+i*period,open:p,high:p+.5,low:p-.5,close:p+.04};
 });
 const buy=core.signalAudit({bars:oscillating,side:'buy',atr:1,entry:100,stop:98,tp1:106});
