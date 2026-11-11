@@ -1,4 +1,13 @@
-# Storm Códex IA — código-fonte completo e versionado
+# Storm Códex IA — Precision Adaptive 10.0 (ramificação experimental)
+
+**Novidade em 11/11/2026:** checagem causal Clássico/Turbo, auditoria temporal e calibração. Sem acerto validado ao vivo.
+
+- Arquivos Netlify: index.html + storm-adaptive.js (ambos necessários e incluídos no ZIP).
+- Notas: [PRECISION_ADAPTIVE_10_0.md](PRECISION_ADAPTIVE_10_0.md).
+- Copy Trade fictício continua usando unicamente score Turbo estritamente >83 para selecionar operações, além da validade técnica dos dados/preços.
+- A versão main 9.9 permanece inalterada, como referência estável.
+
+---
 
 **Versão principal atualizada em 07/11/2026: base v9.9 + revisão Turbo contextual / Copy Trade >83.**
 
