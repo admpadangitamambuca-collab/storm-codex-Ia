@@ -1466,6 +1466,7 @@ return {PERIOD,normalOHLC,validateRange,load,biquote,binance,resolveNasdaq};
 });
 
 </script>
+<script src="./storm-adaptive.js"></script>
 <script id="v93-classic-engine">
 /* VÓRTEX PIRATA 9.3 — CLÁSSICO PRECISION
  * Complemento somente do motor Clássico. Turbo lê análise 8.2 de referência pela bridge.
@@ -1714,7 +1715,10 @@ function enhance(original,c,i,ctx={},opts={}){
  const directionalSetup=setup==='ROMPIMENTO'||setup==='CONTINUAÇÃO'||setup==='RETESTE'||setup==='REJEIÇÃO DE FAIXA';
  const minScore=({M1:76,M5:74,M15:72,H1:71}[tf]||74)+(asset.startsWith('BTC')?2:asset==='NASDAQ'?1:0);
  const goldOk=!gold||goldGate?.accepted===true&&finite(target)&&target>3;
- const operational=ctx.mode==='live'&&validBasis&&directionalSetup&&score>=minScore&&netRR>=1.2&&mtf.weighted>=-.35&&goldOk&&target>0&&stop>0;
+ const eligibleOperational=ctx.mode==='live'&&validBasis&&directionalSetup&&score>=minScore&&netRR>=1.2&&mtf.weighted>=-.35&&goldOk&&target>0&&stop>0;
+ const adaptive=root.StormAdaptive?.evaluate({engine:'classic',candles:c.slice(0,i+1),asset,tf,side,mode:ctx.mode,score,atClose:closedAt,
+   setup,rr:netRR,mtf:mtf.items,history:ctx.mode==='live'?load(asset,tf):[],macro:ctx.macro})||{ready:true,brakes:[]};
+ const operational=eligibleOperational&&adaptive.ready;
  const reasons=[];
  reasons.push('Regime: '+r.name+' · ATR relativo '+r.volRatio.toFixed(2)+'×');
  reasons.push('Estratégia: '+setup+' · '+(alignedTrend?'EMA 9/21 a favor':'EMA 9/21 contra')+' · candle '+(bodySide?'direcional':'indefinido'));
@@ -1723,6 +1727,7 @@ function enhance(original,c,i,ctx={},opts={}){
  reasons.push('Confluência MTF: '+(mtf.available?mtf.aligned+'/'+mtf.available+' favoráveis, somente velas anteriores':'sem pares temporais comparáveis; não inventada'));
  reasons.push('R:R líquido estimado '+(finite(netRR)?netRR.toFixed(2):'—')+' · stop por estrutura/ATR');
  if(!check.valid)reasons.push('Dados: '+check.flags.join('; '));
+ if(!adaptive.ready)reasons.push('Precision Adaptive: '+adaptive.brakes.join('; '));
  if(original.quality==='EVITAR')reasons.push('Filtro original 8.2 mantém EVITAR, sem liberação pela camada Precision.');
  if(levels.stopTooFar)reasons.push('Stop estrutural excede 2,3 ATR: operação bloqueada.');
  if(!pa.confirmed)reasons.push('Price Action sem gatilho confirmado no '+tf+' selecionado: entrada bloqueada.');
@@ -1734,7 +1739,7 @@ function enhance(original,c,i,ctx={},opts={}){
   operationalReason:operational?'Confluência técnica validada; não é ordem de execução.':reasons.at(-1),
   reasons:[...reasons,...(original.reasons||[]).slice(0,2)],regime:r.name,setup:{...original.setup,id:setup,name:setup,regime:r.name,fit:score},
   strategyId:'v93-'+setup.toLowerCase().replace(/\s+/g,'-'),strategyName:'Precision '+setup,horizon:gold?1:Math.max(1,Math.min(3,original.horizon||3)),
-  v93:{version:VERSION,operational,quality:check,market:r,candle:v,priceAction:pa,elliott:waves,mtf,setup,score,parts:{priceAction:structureScore,trend:trendScore,candle:candleScore,regime:regimeScore,viability,elliott:waves.adjustment},learning:training,
+  v93:{version:VERSION,operational,adaptive,quality:check,market:r,candle:v,priceAction:pa,elliott:waves,mtf,setup,score,parts:{priceAction:structureScore,trend:trendScore,candle:candleScore,regime:regimeScore,viability,elliott:waves.adjustment},learning:training,
   legacy:{side:original.side,score:original.score,quality:original.quality,stopDist:original.stopDist,targetDist:original.targetDist},closedAt}};
 }
 function resolve(rows,c,tf){const ms=FRAMES[tf]||300000,index=new Map(c.map((x,i)=>[x.t,i]));let changes=0;
@@ -1791,6 +1796,7 @@ function render({analysis,asset,tf,mode,source}){
  <div class="v93-metrics"><div><small>Regime de mercado</small><strong>${esc(v.market.name)}</strong></div><div><small>Setup detectado</small><strong>${esc(v.setup)}</strong></div><div><small>Price Action · ${esc(tf)}</small><strong>${esc(paText)}</strong></div><div><small>Elliott · ${esc(tf)}</small><strong>${esc(v.elliott?.label||'INDETERMINADAS')}</strong></div><div><small>Confluência MTF</small><strong>${v.mtf.available?v.mtf.aligned+'/'+v.mtf.available:'Sem dados comparáveis'}</strong></div><div><small>Risco / retorno líquido</small><strong>${finite(analysis.netRR)?analysis.netRR.toFixed(2)+':1':'—'}</strong></div></div>
  <div class="v93-detail">${part}</div><p class="v93-foot">Dados: ${flags}. Índice ${analysis.score}/100 é heurístico, NÃO representa probabilidade real.</p>
  <p class="v93-foot">Aprendizado: ${v.learning.active?'ajuste '+(v.learning.adjustment>0?'+':'')+v.learning.adjustment+' após validação 70/30':'sem ajuste até validação cronológica suficiente'} · ${v.learning.n} resultados elegíveis. Histórico Precision: ${s.observed} sinais reais aprovados observados, ${s.concluded} encerrados com vitória/perda, ${s.rate!==null?(s.rate*100).toFixed(1)+'% de acerto suavizado (n≥30)':'amostra insuficiente para taxa estatística'}.</p>`;
+ root.StormAdaptive?.renderPanel('classic',v.adaptive,el);
 }
 function init(){if(!root.document||root.document.getElementById('v93ClassicReadout'))return;
  const anchor=root.document.getElementById('v92ClassicPlan'),signal=root.document.querySelector('.rightstack > .signal-panel');if(!anchor&&!signal)return;
@@ -3492,7 +3498,10 @@ function analyze(data,ctx,records=[]){
  ];
  const base={asset,tf,qualityCheck,crossSource,atrVal,regime,trap,fvgs,pattern,fib,components,score,baseScore,learned,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned};
  const selection=selectiveGate(data,ctx,base);
- return {...base,ready:selection.ready,brakes:selection.brakes,selection,trigger:selection.trigger};
+ const adaptive=window.StormAdaptive?.evaluate({engine:'turbo',candles:c,asset,tf,side:plan.side,mode:data.state?.mode,
+   score,atClose:plan.closedAt,setup:selection.trigger.kind,rr:plan.estimatedNetRR,mtf:plan.mtf,
+   history:records,macro:ctx.macro})||{ready:true,brakes:[]};
+ return {...base,ready:selection.ready&&adaptive.ready,brakes:[...selection.brakes,...adaptive.brakes],selection,trigger:selection.trigger,adaptive};
 }
 /* v9.1: portão seletivo. O viés do Clássico é um INSUMO: não vira sinal até passar por todas as confirmações. */
 function entryTrigger(bars,side,atrVal,struct,zones,fvgs){
@@ -3674,6 +3683,7 @@ function render(force=false){if(!active)return;loadSettings();const ctx=getConte
  if(signature===lastSignature&&!force)return;lastSignature=signature;
  renderSummary(data,ctx,analysis);renderPricePlan(data,ctx,analysis);renderTechnical(data,ctx,analysis);renderControls(analysis);renderMacro(data,ctx,analysis);renderRisk(data,ctx,analysis);
  renderHeatmap(records,data);renderLearning(records,data,analysis);renderHistory(records,data);
+ window.StormAdaptive?.renderPanel('turbo',analysis.adaptive,$('v90Intelligence'));
  renderRadar();maybeNotify(data,ctx,analysis);
 }
 function renderSummary(data,ctx,an){const p=ctx.plan,q=an.qualityCheck;
