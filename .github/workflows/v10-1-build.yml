@@ -1,0 +1,59 @@
+name: Storm Códex v10.1 — verify and package
+on:
+  push:
+    branches:
+      - feature/v10-1-gold4-vtx-confluence-20261111
+  workflow_dispatch:
+jobs:
+  release:
+    if: "!contains(github.event.head_commit.message, '[skip pack]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar testes e scripts
+        run: |
+          node tests/v10_dual.test.cjs
+          node tests/v10_verify.cjs
+          node tests/v10_1_gold_vtx.test.cjs
+      - name: Construir ZIP Netlify autossuficiente
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          src=Path('versoes/v10.1/Storm_Codex_IA_v10_1_EDITAVEL.html')
+          assert src.read_bytes()==Path('index.html').read_bytes(), 'HTML de entrega precisa corresponder ao HTML da raiz'
+          dst=Path('versoes/v10.1/Storm_Codex_IA_v10_1_NETLIFY_COMPLETO.zip')
+          files=[
+            ('index.html','index.html'),
+            ('README.md','README.md'),
+            ('engine/v10_dual_core.js','engine/v10_dual_core.js'),
+            ('engine/v10_comparison_ui.js','engine/v10_comparison_ui.js'),
+            ('versoes/v10.1/README_V10_1.md','LEIA_ME_V10_1.md'),
+            ('tests/v10_dual.test.cjs','tests/v10_dual.test.cjs'),
+            ('tests/v10_verify.cjs','tests/v10_verify.cjs'),
+            ('tests/v10_1_gold_vtx.test.cjs','tests/v10_1_gold_vtx.test.cjs')
+          ]
+          with ZipFile(dst,'w',ZIP_DEFLATED,compresslevel=9) as z:
+            for path,name in files: z.write(path,arcname=name)
+          with ZipFile(dst) as z:
+            assert z.testzip() is None
+            assert z.read('index.html')==Path('index.html').read_bytes()
+            assert len(z.namelist())==len(files)
+          print(f'ZIP validado: {dst} ({dst.stat().st_size} bytes)')
+          PY
+      - name: Publicar ZIP versionado na ramificação
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add versoes/v10.1/Storm_Codex_IA_v10_1_NETLIFY_COMPLETO.zip
+          if ! git diff --staged --quiet; then
+            git commit -m "build(v10.1): pacote Netlify completo testado [skip pack]"
+            git push origin HEAD:feature/v10-1-gold4-vtx-confluence-20261111
+          fi
