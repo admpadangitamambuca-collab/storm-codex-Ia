@@ -14,3 +14,6 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/adaptive.test.js
+      - run: unzip -tq releases/Storm_Codex_IA_Precision_Adaptive_10_0_NETLIFY.zip
+      - run: unzip -p releases/Storm_Codex_IA_Precision_Adaptive_10_0_NETLIFY.zip index.html | cmp - index.html
+      - run: unzip -p releases/Storm_Codex_IA_Precision_Adaptive_10_0_NETLIFY.zip storm-adaptive.js | cmp - storm-adaptive.js
