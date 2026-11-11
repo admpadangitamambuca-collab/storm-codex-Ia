@@ -1,0 +1,48 @@
+name: Publish Netlify ZIP
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - sw.js
+      - README.md
+      - .github/workflows/netlify-package.yml
+  workflow_dispatch:
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Copy Trade before publishing
+        run: node tests/copy-trade-smoke.cjs
+      - name: Create standalone Netlify package
+        run: |
+          mkdir -p dist/netlify
+          cp index.html sw.js dist/netlify/
+          cat > dist/netlify/LEIA_ME.txt <<'EOF'
+          STORM CODEX IA v10.3.1 — COPY TRADE REPARADO
+          Conteudo completo para Netlify: index.html e sw.js na raiz.
+          Publicar: arraste este ZIP no Netlify Drop ou extraia os arquivos.
+          O monitor ficticio inicia ao abrir o aplicativo.
+          Operacoes: apenas novas velas fechadas, com Turbo > 83/100 e OHLC/stop/alvo validos.
+          Os dados de mercado publicos podem atrasar; sem execucao em corretora.
+          Nao garante lucratividade. Historico salvo localmente no navegador.
+          EOF
+          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip index.html sw.js LEIA_ME.txt)
+          unzip -l dist/Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY
+          path: dist/Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip
+      - name: Publish direct-download release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE=dist/Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip
+          if gh release view v10.3.1 >/dev/null 2>&1; then
+            gh release upload v10.3.1 "$FILE" --clobber
+          else
+            gh release create v10.3.1 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.3.1 - Copy Trade corrigido" --notes "Pacote completo para Netlify. Monitor automatico e simulacao Turbo >83. Testes automatizados passaram. Sem operacoes reais."
+          fi

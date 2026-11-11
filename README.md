@@ -1,5 +1,19 @@
 # Storm Códex IA — código-fonte completo e versionado
 
+## Versão principal 10.3.1 — Copy Trade corrigido (11/11/2026)
+
+- O simulador fictício inicia o monitor automaticamente com a abertura do site; não exige primeiro entrar na aba Copy Trade.
+- Lê XAUUSD, EURUSD, USDJPY e AUDUSD em M1/M5/M15/H1, com consultas de períodos em paralelo por ativo.
+- Corrige o descarte indevido de sinais nos períodos M15/H1: a janela de observação agora respeita a duração do timeframe.
+- Permite recuperar uma vela fechada inicialmente recebida com atraso, sem inventar operações retroativas.
+- Único critério de pontuação do Copy: **score Turbo >83/100**; são obrigatórios OHLC real recente e contínuo, direção e níveis coerentes para simulação; o filtro seletivo do Turbo não é um segundo veto.
+- O painel exibe diagnóstico por ativo/período para explicar ausência de operação.
+- Histórico fictício local, banca inicial US$ 100,00, lotes XAU 0,10 / Forex 0,15, stop e TP1 mantidos.
+- Testes: `node tests/copy-trade-smoke.cjs` (sintaxe dos módulos + cenários de operação, recuperação da fonte e deduplicação). Não houve prova com feed externo em tempo real nem operação na corretora.
+- Netlify: use o ZIP completo `Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip` quando publicado ou envie somente `index.html` e `sw.js` na raiz.
+
+## Histórico das versões anteriores
+
 **Versão principal atualizada em 07/11/2026: base v9.9 + revisão Turbo contextual / Copy Trade >83.**
 
 - `index.html`: app autossuficiente na raiz, atualizado com o código da ramificação `feature/turbo-contextual-20261107`.
@@ -25,7 +39,7 @@
 ## Regras para manter a integridade do projeto
 
 - Preservar o Clássico Precision e o Turbo Equilibrado e seus bloqueios de segurança.
-- A simulação Copy Trade opera com dupla pontuação: Turbo >=78 e motor original >=65, em vela fechada válida.
+- A simulação Copy Trade atual opera com score Turbo >83 e níveis/dados válidos, em vela fechada; o histórico antigo tinha outra regra.
 - Quatro ativos monitorados com gráfico individual selecionável: XAUUSD, EURUSD, USDJPY e AUDUSD.
 - Banca inicial fictícia de US$100, atualizada por takes e stops encerrados de operações prospectivas.
 - Sem ordens reais ou integração com corretora. Nenhuma promessa de lucro, probabilidade estatística ou acurácia validada.

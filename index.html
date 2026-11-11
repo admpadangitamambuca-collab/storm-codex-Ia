@@ -4648,18 +4648,17 @@ function computeForCopy(asset,tf,bar){
  const originalScore=Number(bar?.analysis?.score);
  const turboScore=Number(analysis?.score);
  const turboValid=Number.isFinite(turboScore)&&turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE;
- const goldDistance=p.side==='buy'?p.targets?.[0]-p.entry:p.side==='sell'?p.entry-p.targets?.[0]:NaN;
- const goldFourOK=asset!=='XAUUSD'||(Number.isFinite(goldDistance)&&goldDistance>=4);
+ const levelsCoherent=p.side==='buy'?p.stop<p.entry&&p.targets?.[0]>p.entry:p.side==='sell'?p.stop>p.entry&&p.targets?.[0]<p.entry:false;
  // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
  // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
  // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
- const valid=Boolean(turboValid&&levels&&goldFourOK&&quality?.fresh&&quality?.valid&&!quality?.gaps&&
+ const valid=Boolean(turboValid&&levels&&levelsCoherent&&quality?.fresh&&quality?.valid&&!quality?.gaps&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
  reason:valid?'Confluência Turbo >83/100: operação simulada elegível':
   (!turboValid?'Confluência Turbo precisa ser superior a 83/100':
-   'Falta OHLC recente, direção, alvo XAUUSD de US$ 4,00 ou níveis válidos para simular entrada, stop e alvo')};
+   'OHLC recente e contínuo, direção ou níveis de entrada/stop/alvo não confirmados para simulação')};
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
@@ -4689,12 +4688,23 @@ function observe(asset,tf,bar){const id=asset+'|'+tf;
  const last=armedAt.get(id);
  if(!ok(last)){armedAt.set(id,bar.closedAt);return false}
  if(bar.closedAt<=last)return false;
- armedAt.set(id,bar.closedAt);
- // Sinais apenas prospectivos. Fechamento antigo/replay nunca é contado como uma operação observada.
+ // Uma tentativa com OHLC atrasado não deve consumir o fechamento antes de ele ser válido.
  const ms=FRAMES[tf];
- if(bar.closedAt>Date.now()||Date.now()-bar.closedAt>Math.min(ms+90000,390000))return false;
- const evaluated=computeForCopy(asset,tf,bar);
+ if(bar.closedAt>Date.now()||Date.now()-bar.closedAt>ms+90000){
+  bar.lastEvaluation={ready:false,reason:'Fechamento fora da janela prospectiva de observação'};
+  armedAt.set(id,bar.closedAt);return false;
+ }
+ if(bar.providerStale||bar.error||!bar.analysis){
+  bar.lastEvaluation={ready:false,reason:bar.error||'Aguardando cotação e análise válidas da vela fechada'};
+  return false;
+ }
+ let evaluated;
+ try{evaluated=computeForCopy(asset,tf,bar)}catch(e){
+  bar.lastEvaluation={ready:false,reason:'Falha na avaliação: '+String(e?.message||e)};return false;
+ }
  bar.lastEvaluation=evaluated;
+ if(!evaluated?.analysis||!evaluated?.ctx?.plan)return false;
+ armedAt.set(id,bar.closedAt);
  if(!evaluated.ready)return false;
  const p=evaluated.ctx.plan;
  const side=p.side;
@@ -4741,12 +4751,8 @@ async function pull(asset,tf,force){const id=asset+'|'+tf,prior=dataStore.get(id
  }
 }
 async function scanAsset(asset,force){
- const updated=[];
- for(const tf of Object.keys(FRAMES)){
-   const before=dataStore.get(asset+'|'+tf)?.closedAt||0;
-   const bar=await pull(asset,tf,force);
-   if(bar?.closedAt&&bar.closedAt>before)updated.push({tf,bar});
- }
+ // Buscar os quatro TFs em paralelo: o último período não espera 3 requisições anteriores.
+ await Promise.all(Object.keys(FRAMES).map(tf=>pull(asset,tf,force)));
  // Recalcular a leitura legada de cada período com snapshots do PRÓPRIO ativo.
  // O motor original recebe o Map como contexto apenas nesta avaliação auxiliar.
  // No painel Clássico original, a fonte de snapshots é preservada integralmente.
@@ -4756,8 +4762,11 @@ async function scanAsset(asset,force){
      try{bar.analysis=contextForOHLC(asset,tf,bar.candles)}catch(e){bar.error='Avaliação legada: '+String(e?.message||e)}
    }
  }
- // Só avaliar novos fechamentos depois de atualizar os timeframes de contexto.
- for(const {tf,bar} of updated)observe(asset,tf,bar);
+ // Permitir reavaliação de fechamento que tenha chegado atrasado, sem backfill.
+ for(const tf of Object.keys(FRAMES)){
+  const bar=dataStore.get(asset+'|'+tf);
+  if(bar?.closedAt>0&&bar.closedAt>(armedAt.get(asset+'|'+tf)||0))observe(asset,tf,bar);
+ }
 }
 async function scan(force=false){if(!started||scanning)return;
  if(!window.SGV78Data?.load||!window.SGEngine?.evaluateLegacy||!window.Vortex91Core?.analyze){scanError='Motores ou fonte pública não disponíveis';paint();return}
@@ -4782,6 +4791,7 @@ function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulado
  <header class="storm-v95-head"><div><small>STORM CÓDEX IA · SIMULAÇÃO</small><h2>Copy Trade <span style="color:#f2c979">Turbo &gt;83</span></h2>
  <p><b>Regra única de seleção: confluência Turbo &gt;83/100</b> (83,0 não entra; 83,1 entra). Todas as leituras acima desse limite com vela fechada, direção e preços de entrada, stop e alvo válidos geram uma operação fictícia, mesmo que o filtro seletivo do painel Turbo aponte aguardando confirmação. <b>Sem nota mínima do motor original nem outro filtro estratégico de entrada.</b> Resultados são simulações, não ordens reais ou probabilidade comprovada. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Histórico existente mantido.</p></div>
  <div class="storm-v95-action-row"><span id="stormCopyHealth" class="storm-v95-chip">Monitor não iniciado</span><button type="button" class="storm-v95-btn" id="stormCopyRefresh">↻ Consultar OHLC</button><button type="button" class="storm-v95-btn" id="stormCopyExport">↓ Exportar operações</button></div></header>
+ <p class="storm-v95-foot" id="stormCopyDiagnostics" role="status" aria-live="polite" style="margin:6px 0 14px;overflow-wrap:anywhere">Monitorando M1, M5, M15 e H1.</p>
  <div class="storm-v95-stats"><div class="storm-v95-stat"><small>SALDO ACUMULADO FICTÍCIO</small><b id="stormCopyTotal">US$ 0,00</b></div>
  <div class="storm-v95-stat"><small>TAKES / STOPS</small><b id="stormCopyCounts">0 / 0</b></div>
  <div class="storm-v95-stat"><small>OPERAÇÕES PENDENTES</small><b id="stormCopyPending">0</b></div>
@@ -4792,7 +4802,7 @@ function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulado
  <div class="storm-v95-ledger"><div class="storm-v95-title"><h3>Registro de operações fictícias</h3><small id="stormCopyAudit">Sem operações registradas</small></div>
  <div class="storm-v95-tablewrap"><table class="storm-v95-table"><thead><tr><th>Vela / ativo</th><th>Direção</th><th>Turbo</th><th>Original</th><th>Lote</th><th>Entrada</th><th>TP1</th><th>Stop</th><th>Resultado</th><th>P&L USD</th></tr></thead><tbody id="stormCopyRows"><tr><td colspan="10">Ainda não foram observados sinais válidos após ativar o monitor.</td></tr></tbody></table></div></div>
  <p class="storm-v95-info">Convenção: entrada fictícia no fechamento da vela aprovada; saída integral no TP1 ou no stop, o que vier primeiro. Se ambos forem tocados na mesma vela, o resultado é <b>ambíguo</b> e não entra no saldo. Após 6 velas sem nenhum toque, o sinal expira sem P&L. Sem spread, comissão, slippage, impostos ou execução real. Contratos padrão estimados: ouro 100 oz/lote; Forex 100.000 unidades/lote; USDJPY convertido de JPY para USD à cotação teórica de saída. A especificação efetiva varia por corretora.</p>
- <p class="storm-v95-foot">O robô acompanha candles enquanto a página estiver aberta, inclusive se você retornar ao painel original. Ao abrir pela primeira vez, ele apenas observa as velas disponíveis e inicia os registros a partir dos próximos fechamentos; sem backtest disfarçado de resultado real. A fonte pública pode atrasar ou falhar. Se a página estiver fechada, não há execução nem recuperação retroativa de operações perdidas. Resultados anteriores ficam somente neste navegador, no armazenamento local.</p>
+ <p class="storm-v95-foot">O monitor inicia automaticamente ao carregar o aplicativo e acompanha candles enquanto a página estiver aberta, inclusive nos painéis Clássico e Turbo. Na primeira consulta, ele observa as velas disponíveis e inicia registros somente nos próximos fechamentos; sem backtest disfarçado de resultado real. A fonte pública pode atrasar ou falhar. Se a página estiver fechada, não há execução nem recuperação retroativa de operações perdidas. Resultados anteriores ficam somente neste navegador, no armazenamento local.</p>
  </section>`}
 function ensureUI(){if($('stormCopyBtn'))return;
  const turbo=$('v83TurboBtn'),header=document.querySelector('.shell>.header'),shell=document.querySelector('.shell');
@@ -4825,6 +4835,9 @@ function ensureUI(){if($('stormCopyBtn'))return;
  setInterval(()=>{if(started&&!scanning&&!document.hidden)scan(false);if(!document.hidden)requestAnimationFrame(drawAll)},20000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&started)scan(false)});
  paint();drawAll();
+ // O simulador deve observar desde que o app esteja aberto, sem exigir visitar a aba Copy.
+ const boot=()=>{if(!started)started=true;if(!document.hidden)scan(true)};
+ if(document.readyState==='complete')boot();else window.addEventListener('load',boot,{once:true});
 }
 function drawCandleChart(canvas,candles,asset,lines=[],zones=[],trades=[],fib=null){if(!canvas)return;
  const box=canvas.getBoundingClientRect(),W=box.width,H=box.height;if(!W||!H)return;
@@ -4981,6 +4994,12 @@ function paint(){if(!$('stormCopyTrade'))return;
  $('stormCopyWinRate').textContent=stats.done?((100*stats.wins/stats.done).toFixed(1)+'%'):'—';
  $('stormCopyAudit').textContent=stats.count+' registro(s) · '+stats.unresolved+' inconclusivo(s)/expirado(s) · TP1 ou stop como encerramento integral';
  const health=$('stormCopyHealth');if(health)health.textContent=!started?'Monitor não iniciado':scanning?'Consultando 4 ativos…':scanError?'Algumas fontes indisponíveis':'Monitor ativo · '+(lastScanAt?fmtTime(lastScanAt):'inicializando');
+ const diag=$('stormCopyDiagnostics');if(diag){
+  const key=assetShown+'|'+tfShown,bar=dataStore.get(key),e=bar?.lastEvaluation;
+  const feed=bar?.error?'Erro na fonte: '+bar.error:bar?.providerStale?'Último candle defasado':bar?.closedAt?'OHLC recebido: '+fmtTime(bar.closedAt):'Aguardando cotação';
+  const assessment=e?.reason||(!armedAt.has(key)?'Inicializando observação': 'Aguardando próximo fechamento para avaliar Turbo >83');
+  diag.textContent=assetShown+' / '+tfShown+' · '+feed+' · '+(Number.isFinite(e?.score)?'Turbo '+e.score.toFixed(1)+'/100 · ':'')+assessment;
+ }
  const tbody=$('stormCopyRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,80).map(r=>{
   const cls=r.status==='take'?'gain':r.status==='stop'?'loss':'';
   return `<tr><td>${fmtTime(r.closedAt)} · ${esc(r.asset)}/${esc(r.tf)}</td>
