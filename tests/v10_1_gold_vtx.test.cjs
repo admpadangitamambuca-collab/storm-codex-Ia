@@ -34,7 +34,7 @@ assert(app.includes("side:gold&&!goldOk?'wait':side"),
 assert(app.includes("distances[0]<4"),'Turbo bloqueia TP1 insuficiente');
 assert(app.includes("goldDistance>=4"),'Copy respeita requisito de preço do ouro');
 assert(app.includes("turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE"),'Copy mantém >83');
-assert.equal(core.VERSION,'10.1-dual-engine');
+assert.equal(core.VERSION,'10.2-dual-engine');
 assert.equal(core.selfTest().ok,true);
 const evidence=core.technicalConfluence(bars(1),'buy',10);
 assert(evidence.ready&&Number.isFinite(evidence.rsi)&&Number.isFinite(evidence.macdHistogram));
