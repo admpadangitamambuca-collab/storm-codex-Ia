@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const blocks=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]);
+const blocks=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
 const part=(i,a,b)=>{const s=blocks[i],start=s.indexOf(a),end=s.indexOf(b,start);assert.ok(start>=0&&end>start,'Trecho não encontrado: '+a);return s.slice(start,end);};
 
 test('Todos os scripts inline possuem sintaxe JavaScript válida',()=>{
@@ -63,20 +63,24 @@ test('Clássico Precision: histórico expirado sem vela de origem é inconclusiv
  assert.equal(rows[0].status,'incomplete');
 });
 test('Fonte com falha marca o último snapshot como atrasado',()=>{
- assert.match(blocks[11],/snapshots\\.set\\(key,\\{\\.\\.\\.prior,providerStale:true,error:msg/);
+ assert.match(blocks[11],/snapshots\.set\(key,\{\.\.\.prior,providerStale:true,error:msg/);
 });
 test('Copy Trade exige score estritamente superior a 83 e sem gap',()=>{
  assert.match(blocks[20],/const COPY_TURBO_THRESHOLD_EXCLUSIVE=83/);
  assert.match(blocks[20],/turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE/);
- assert.match(blocks[20],/quality\\?\\.fresh&&quality\\?\\.valid&&!quality\\?\\.gaps/);
- assert.doesNotMatch(blocks[20].slice(blocks[20].indexOf('function computeForCopy('),blocks[20].indexOf('function settleOne(')),/classicScore\\s*[<>]=?\\s*65/);
+ assert.match(blocks[20],/quality\?\.fresh&&quality\?\.valid&&!quality\?\.gaps/);
+ assert.doesNotMatch(blocks[20].slice(blocks[20].indexOf('function computeForCopy('),blocks[20].indexOf('function settleOne(')),/classicScore\s*[<>]=?\s*65/);
 });
-test('Exportação Copy protege fórmulas de planilha',()=>{
- const start=blocks[20].indexOf('function exportCSV()'),frag=blocks[20].slice(start);
- assert.match(frag,/\\/\\^\\[=\\+\\\\-@/);
+test('Exportação Copy impede fórmulas de planilha',()=>{
+ const fragment=blocks[20].slice(blocks[20].indexOf('function exportCSV()'));
+ const p=fragment.indexOf('const quote=x=>'),end=fragment.indexOf('\n',p);
+ assert.ok(p>=0&&end>p);
+ const quote=new Function(fragment.slice(p,end)+';return quote;')();
+ assert.equal(quote('=2+2').charCodeAt(1),39);
+ assert.equal(quote('texto'),'"texto"');
 });
 test('Service worker opcional não cacheia cotações',()=>{
  const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
  assert.doesNotThrow(()=>new vm.Script(sw));
- assert.doesNotMatch(sw,/\\bcaches\\.open\\(/);
+ assert.doesNotMatch(sw,/\bcaches\.open\(/);
 });
