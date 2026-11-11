@@ -1,4 +1,21 @@
-# Storm Códex IA v10.0 — Dual Engine Evolution
+# Storm Códex IA v10.1 — mínimo XAUUSD US$ 4 + Turbo por confluências públicas VTX
+
+## Baixar a versão atual
+
+- [**ZIP completo para Netlify v10.1**](https://github.com/admpadangitamambuca-collab/storm-codex-Ia/raw/refs/heads/feature/v10-1-gold4-vtx-confluence-20261111/versoes/v10.1/Storm_Codex_IA_v10_1_NETLIFY_COMPLETO.zip) — index.html na raiz, motor e instruções; arquivo gerado e verificado pelo fluxo de empacotamento.
+- [HTML v10.1 autossuficiente e editável](versoes/v10.1/Storm_Codex_IA_v10_1_EDITAVEL.html)
+- [Notas técnicas e limites](versoes/v10.1/README_V10_1.md)
+
+A regra do ouro XAUUSD agora requer **projeção de pelo menos US$ 4,00 no sentido de COMPRA ou VENDA** em ambos os motores. Abaixo desse valor, o sinal exibido é **AGUARDAR**. A condição é inclusiva em US$ 4,00, não se aplica como quatro dólares aos preços de EURUSD/BTC e não é garantia de movimento. O Copy Trade mantém **Turbo >83/100**, com checagem de integridade e alvo XAUUSD compatível.
+
+No Turbo, novas confirmações heurísticas RSI(14), MACD(12,26,9), Bollinger(20,2) e spring/upthrust de Wyckoff por OHLC complementam SMC, estrutura, Fibonacci, FVG, armadilhas e MTF. A sessão UTC é exibida sem atribuir ganho estatístico fictício. Trata-se de aproximação independente baseada em recursos públicos, **não de cópia do mecanismo proprietário da VTX Trade IA**.
+
+Testes: `node tests/v10_dual.test.cjs`; `node tests/v10_verify.cjs`; `node tests/v10_1_gold_vtx.test.cjs`. Sem ordens reais, sem MT5 nesta ramificação. Necessário testar visual e feed em browser/Netlify, assim como validar resultados em demo.
+
+---
+
+## Referência histórica v10.0
+
 
 Base preservada: **v9.9 Turbo contextual e Copy Trade score estritamente superior a 83/100**.
 
