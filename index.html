@@ -4284,7 +4284,7 @@ function paint(){if(!$('stormCopyTrade'))return;
 }
 function drawAll(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;drawTurbo();if(open)drawCopy()})}
 function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','timeframe','direcao','score_turbo','score_original','lote','entrada','stop','tp1','status','Pnl_USD','R','origem'];
- const quote=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+ const quote=x=>{const value=String(x??'');return '"'+(/^[=+\-@\t\r]/.test(value)?"'"+value:value).replace(/"/g,'""')+'"'};
  const txt='\ufeff'+[cols.join(';'),...rows.map(r=>[new Date(r.closedAt).toISOString(),r.asset,r.tf,r.side,r.score,r.classicScore??'',r.lot,r.entry,r.stop,r.tp,r.status,r.pnlUsd??'',r.R??'',r.origin].map(quote).join(';'))].join('\r\n');
  const link=document.createElement('a'),url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
  link.href=url;link.download='STORM_CODEX_v9_6_COPY_TRADE_'+new Date().toISOString().slice(0,10)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
