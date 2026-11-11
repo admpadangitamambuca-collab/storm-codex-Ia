@@ -1947,7 +1947,7 @@ function learn(rows,asset,tf,setup,at){
 function enhance(original,c,i,ctx={},opts={}){
  if(!original||!Array.isArray(c)||i<1||i>=c.length||!validCandle(c[i])||!validCandle(c[i-1]))return original;
  const tf=ctx.tf||'M5',asset=ctx.asset||'XAUUSD',a=Math.max(1e-9,Number(ctx.aa?.[i])||0),check=audit(c,i,ctx),r=regime(c,i,ctx),v=candle(c,i,a);
- const p=c[i].close,closedAt=c[i].t+(FRAMES[tf]||300000),side=['buy','sell'].includes(original.side)?original.side:original.oneCandleGate?.originalSide||((ctx.e9?.[i]>ctx.e21?.[i])?'buy':'sell');
+ const p=c[i].close,closedAt=c[i].t+(FRAMES[tf]||300000),side=['buy','sell'].includes(original.side)?original.side:(['buy','sell'].includes(original.oneCandleGate?.originalSide)?original.oneCandleGate.originalSide:((ctx.e9?.[i]>ctx.e21?.[i])?'buy':'sell'));
  const pa=priceAction(c,i,a,side); // TF próprio com maior participação na entrada
  const waves=elliott(c,i,a,side); // só Clássico, sem tocar o Turbo
  const buy=side==='buy',emaDir=ctx.e9?.[i]>=ctx.e21?.[i]?'buy':'sell';
