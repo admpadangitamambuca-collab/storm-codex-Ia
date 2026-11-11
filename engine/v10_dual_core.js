@@ -8,7 +8,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
-const VERSION='10.0-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
+const VERSION='10.1-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
 const finite=x=>typeof x==='number'&&Number.isFinite(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const valid=b=>b&&[b.t,b.open,b.high,b.low,b.close].every(finite)&&b.high>=Math.max(b.open,b.close,b.low)&&b.low<=Math.min(b.open,b.close,b.high);
 const dir=x=>x>0?'buy':x<0?'sell':null;
@@ -97,6 +97,58 @@ function classicReview({bars,at,atr,side,tf='M5',waves,pa,mtf,market}={}){
   if(market?.sideways&&!s.retest&&!pa?.rejection&&s.direction!==side)delta-=1;
   return {version:VERSION,delta:clamp(delta,-9,5),structure:s,messages};
 }
+
+/* Confluências inspiradas em métodos públicos da VTX Trade IA: não reproduz seu
+ * algoritmo proprietário. Todos os cálculos são OHLC causais de velas fechadas.
+ * Indicadores correlacionados não contam como provas independentes. */
+function technicalConfluence(bars,side,atr){
+ const empty={ready:false,rsi:null,macd:null,macdSignal:null,macdHistogram:null,
+  bollinger:null,wyckoff:'não identificado',session:'indisponível',confirmations:0,oppositions:0,messages:['Indicadores sem histórico fechado suficiente']};
+ if(!Array.isArray(bars)||bars.length<54||!['buy','sell'].includes(side)||
+   !finite(atr)||atr<=0||!bars.slice(-54).every(valid))return empty;
+ const last=bars.at(-1),price=last.close,closes=bars.map(x=>x.close);
+ const n=14;let gains=0,losses=0;
+ for(let j=1;j<=n;j++){const d=closes[j]-closes[j-1];gains+=Math.max(0,d);losses+=Math.max(0,-d);}
+ let avgUp=gains/n,avgDown=losses/n;
+ for(let j=n+1;j<closes.length;j++){const d=closes[j]-closes[j-1];
+   avgUp=(avgUp*(n-1)+Math.max(0,d))/n;avgDown=(avgDown*(n-1)+Math.max(0,-d))/n;}
+ const rsi=avgDown===0?(avgUp===0?50:100):100-100/(1+avgUp/avgDown);
+ let fast=closes[0],slow=closes[0],macdSignal=0,histPrev=0,macd=0,hist=0;
+ for(let j=1;j<closes.length;j++){
+   fast+=(2/13)*(closes[j]-fast);slow+=(2/27)*(closes[j]-slow);
+   macd=fast-slow;histPrev=hist;macdSignal+=(2/10)*(macd-macdSignal);hist=macd-macdSignal;
+ }
+ const window=closes.slice(-20),mid=window.reduce((a,b)=>a+b,0)/20;
+ const deviation=Math.sqrt(window.reduce((a,b)=>a+(b-mid)**2,0)/20);
+ const upper=mid+2*deviation,lower=mid-2*deviation;
+ const bandwidth=mid!==0?(upper-lower)/Math.abs(mid):0;
+ const channel=price>=upper?'faixa superior':price<=lower?'faixa inferior':'dentro das bandas';
+ const high=Math.max(...bars.slice(-21,-1).map(x=>x.high));
+ const low=Math.min(...bars.slice(-21,-1).map(x=>x.low));
+ const spring=last.low<low-.05*atr&&last.close>low+.03*atr&&last.close>last.open;
+ const upthrust=last.high>high+.05*atr&&last.close<high-.03*atr&&last.close<last.open;
+ const wyckoff=spring?'spring OHLC (reação após varredura)':upthrust?'upthrust OHLC (rejeição de topo)':'sem spring/upthrust confirmado';
+ const favour=side==='buy'?1:-1;
+ const rsiScore=rsi>=52&&rsi<=74?1:rsi<=48&&rsi>=26?-1:0;
+ const macdScore=hist>0&&hist>=histPrev?1:hist<0&&hist<=histPrev?-1:0;
+ const bandScore=price>mid&&price<upper+atr*.15?1:price<mid&&price>lower-atr*.15?-1:0;
+ const votes=[rsiScore,macdScore,bandScore];
+ const confirmations=votes.filter(v=>v===favour).length,oppositions=votes.filter(v=>v===-favour).length;
+ const counterTrap=(side==='buy'&&upthrust)||(side==='sell'&&spring);
+ const confirmTrap=(side==='buy'&&spring)||(side==='sell'&&upthrust);
+ const hour=new Date(last.t).getUTCHours();
+ const session=hour>=13&&hour<17?'sobreposição Londres–NY (UTC)':
+  hour>=7&&hour<13?'sessão europeia (UTC)':hour>=17&&hour<22?'sessão americana tardia (UTC)':'fora da sobreposição principal (UTC)';
+ const messages=[
+   'RSI(14) '+rsi.toFixed(1)+'; MACD(12,26,9) hist '+hist.toFixed(5),
+   'Bollinger(20,2): '+channel+'; largura '+(bandwidth*100).toFixed(2)+'%',
+   'Wyckoff por OHLC: '+wyckoff+' (sem confirmação de volume institucional)',
+   'Janela: '+session+' (informativa; sem taxa de acerto presumida)'
+ ];
+ return {ready:true,rsi,macd,macdSignal,macdHistogram:hist,bollinger:{mid,upper,lower,bandwidth,channel},
+  wyckoff,session,confirmations,oppositions,counterTrap,confirmTrap,messages};
+}
+
 function turboReview({bars,tf='M5',side,atr,components,regime}={}){
   const rows=Array.isArray(components)?components.map(x=>({...x})):[];
   const s=structure(bars,Array.isArray(bars)?bars.length-1:-1,atr,side,tf);
@@ -105,7 +157,7 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
     const before=r.earned;r.earned=clamp(r.earned+change,0,r.max);
     if(r.earned!==before)r.note+=' · '+why;
   };
-  const evidence=[];
+  const evidence=[],technical=technicalConfluence(bars,side,atr);
   // Indicadores do mesmo candle/regime NÃO são evidências independentes.
   const structureScore=rows.find(x=>x.name==='Estrutura e price action')?.earned||0;
   const trendScore=rows.find(x=>x.name==='Médias e momentum')?.earned||0;
@@ -133,11 +185,26 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
     mod('Liquidez e armadilhas',-5,'rompimento devolvido');
     evidence.push('Armadilha adicional contra a direção detectada');
   }
+  if(technical.ready){
+    // Os três osciladores derivam do MESMO preço: bônus de até 1 ponto,
+    // mas contradições fortes e armadilhas impactam o sinal.
+    if(technical.confirmations>=2&&technical.oppositions===0)
+      mod('Médias e momentum',1,'RSI/MACD/Bollinger concordantes, bônus limitado');
+    if(technical.oppositions>=2)
+      mod('Médias e momentum',-3,'RSI/MACD/Bollinger contraditórios');
+    if(technical.counterTrap)
+      mod('Liquidez e armadilhas',-4,'rejeição Wyckoff OHLC oposta');
+    if(technical.confirmTrap)
+      mod('Liquidez e armadilhas',1,'reação Wyckoff OHLC favorável');
+    if((side==='buy'&&technical.rsi>82)||(side==='sell'&&technical.rsi<18))
+      mod('Médias e momentum',-2,'oscilador estendido; risco de exaustão');
+    evidence.push(...technical.messages);
+  }else evidence.push('RSI/MACD/Bollinger não calculados: histórico fechado insuficiente');
   if(tf==='M1'&&rows.find(x=>x.name==='Confluência M1–H1')?.earned<=5){
     mod('Confluência M1–H1',-2,'M1 sem confirmação alta');
   }
   return {version:VERSION,components:rows,independentDirection:s.direction,directionConfidence:s.confidence,
-    structure:s,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
+    structure:s,technical,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
 }
 function summarize(rows,engine,{costR=0}={}){
   costR=finite(costR)?clamp(costR,0,2):0;
@@ -200,5 +267,5 @@ function selfTest(){
   return {ok:causal&&dedup&&p.n===2&&p.pending===1&&p.meanR>.39&&p.meanR<.41,
     tests:{noFutureLeak:causal,correlationPenalty:dedup,observedOnly:p.n===2&&p.pending===1,meanR:p.meanR}};
 }
-return {VERSION,FRAME,valid,pivots,zones,structure,classicReview,turboReview,summarize,selfTest};
+return {VERSION,FRAME,valid,pivots,zones,structure,technicalConfluence,classicReview,turboReview,summarize,selfTest};
 });
