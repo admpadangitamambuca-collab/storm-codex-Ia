@@ -12,7 +12,7 @@ assert(html.includes('COPY_TURBO_THRESHOLD_EXCLUSIVE=83'));
 assert(!html.includes('goldFourOK'),'Filtro extra do ouro não pode anular o score >83');
 assert(html.includes("window.addEventListener('load',boot"),'Auto-start não conectado');
 let clock=Date.parse('2026-11-11T15:22:00Z');
-let delayFeed=false;
+let delayFeed=false,turboScore=84.2;
 const nativeDate=Date;
 class Clock extends nativeDate {constructor(...xs){super(...(xs.length?xs:[clock]));}static now(){return clock;}}
 const store=new Map();
@@ -36,7 +36,7 @@ const ctx={
    const a=data.state.analysis,p=data.state.candles.at(-1).close;
    return {data,plan:{side:a.side,hasLevels:true,entry:p,stop:p-a.stopDist,targets:[p+a.targetDist]}};
  }},
- Vortex91Core:{analyze:()=>({score:84.2,qualityCheck:{valid:true,fresh:true,gaps:false},trigger:{kind:'fixture'}})}
+ Vortex91Core:{analyze:()=>({score:turboScore,qualityCheck:{valid:true,fresh:true,gaps:false},trigger:{kind:'fixture'}})}
 };
 ctx.window=ctx;
 vm.runInNewContext(match[1],ctx,{filename:'copy-trade.js'});
@@ -46,7 +46,14 @@ vm.runInNewContext(match[1],ctx,{filename:'copy-trade.js'});
  assert.equal(copy.lotPnl({asset:'XAUUSD',side:'buy',entry:3000,lot:.1},3010),100);
  assert.equal(Math.round(copy.lotPnl({asset:'USDJPY',side:'buy',entry:150,lot:.15},151)*100)/100,99.34);
  await copy.scanNow();
- assert.equal(copy.getTrades().length,0,'primeira consulta deve apenas armar monitor');
+ assert.equal(copy.getTrades().length,0,'primeira consulta não pode importar candles anteriores');
+ assert.equal(copy.getFeeds()['XAUUSD|M5'].eval.score,84.2,'o score precisa aparecer já na primeira leitura');
+ turboScore=78;
+ await copy.scanNow();
+ assert.equal(copy.getFeeds()['XAUUSD|M5'].eval.score,78,'Refresh recalcula score no mesmo candle');
+ assert.equal(copy.getTrades().length,0,'releitura da mesma vela não pode criar registro retroativo');
+ turboScore=84.2;
+ await copy.scanNow();
  clock+=3600000;
  await copy.scanNow();
  assert.equal(copy.getTrades().length,16,'16 pares ativo/TF devem simular quando score>83 e OHLC for válido');
@@ -66,5 +73,20 @@ vm.runInNewContext(match[1],ctx,{filename:'copy-trade.js'});
  assert.equal(end.status,'take');
  const both=copy.settleOne(r,[{t:0},{t:60000,low:98.8,high:101.2}]);
  assert.equal(both.status,'ambiguo','não inventar ordem intravela');
- console.log('PASS: scripts sintaticamente válidos; score >83; inicialização sem retroatividade; candles novos, recuperação, deduplicação e liquidação.');
+ // O primeiro fetch pode atravessar um fechamento depois que a página foi aberta.
+ // Esse fechamento deve ser contado, mas nenhuma vela anterior à abertura.
+ clock=Date.parse('2026-11-11T15:23:58Z');
+ let firstRequest=true;
+ const second={...ctx,SGUserHistoryKey:'crossing-user',localStorage:ctx.localStorage,
+  SGV78Data:{load:async(asset,tf)=>{
+   if(firstRequest){firstRequest=false;clock+=3000}
+   return {candles:barsFor(asset,tf),source:'fixture',providerStale:false};
+  }}};
+ second.window=second;
+ vm.runInNewContext(match[1],second,{filename:'copy-trade-crossing.js'});
+ await second.StormCopyTrade95.scanNow();
+ const crossing=second.StormCopyTrade95.getTrades();
+ assert.equal(crossing.length,4,'deve observar primeiro fechamento M1 durante o fetch inicial, sem backfill de M5/M15/H1');
+ assert(crossing.every(r=>r.tf==='M1'),'não importar velas encerradas antes do início');
+ console.log('PASS: 27 scripts sintaticamente válidos; score >83; refresh do score; primeiro fechamento prospectivo; recuperação, deduplicação e liquidação.');
 })().catch(e=>{console.error(e);process.exitCode=1});
