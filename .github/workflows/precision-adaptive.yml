@@ -1,0 +1,16 @@
+name: Precision Adaptive syntax and causal tests
+on:
+  push:
+    branches: [feature/precision-adaptive-20261111]
+  pull_request:
+    paths: [index.html, storm-adaptive.js, tests/adaptive.test.js]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/adaptive.test.js
