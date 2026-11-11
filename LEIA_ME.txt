@@ -1,0 +1,22 @@
+STORM CODEX IA — TURBO: METODOS PUBLICOS — 11/11/2026
+
+INSTRUCOES PARA NETLIFY DROP
+1. Extraia o ZIP ou envie o ZIP diretamente, conforme o fluxo do Netlify Drop.
+2. O index.html esta na raiz e contem todos os 24 scripts embutidos.
+3. Nao e necessario instalar versoes anteriores.
+4. Fonte de dados e conexao de internet continuam necessarias para feed real.
+
+MODIFICACOES
+- Extensao original (nao copia de codigo privado VTX) ao Turbo.
+- Wyckoff com confirmacao em 2 velas, Gartley/Bat aproximados, MACD, RSI, Bollinger, VWAP quando feed disponibiliza volume, perfil de volatilidade por hora UTC com amostra minima.
+- Influencia limitada no score heuristico Turbo: no maximo +4 ou -4 pontos.
+- Mantidos motor Classico, filtro seletivo, MT5 pausado, e regra de Copy Trade estritamente >83/100.
+- Nao foram contratados provedores de dados, IA externa, nem APIs pagas.
+
+VERIFICACOES
+- 24 scripts do HTML: sintaxe JavaScript verificada.
+- Teste puro: 130 candles validos aceitos, candles fora de ordem rejeitados.
+- Teste de feed ao vivo, backtest quantitativo e validacao em navegador real: NAO executados.
+- Nenhuma nova taxa de acerto ou probabilidade estatistica e alegada.
+
+ATENCAO: Simulacao e ferramenta educacional. A gestao de risco continua indispensavel.
