@@ -8,7 +8,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
-const VERSION='10.1-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
+const VERSION='10.2-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
 const finite=x=>typeof x==='number'&&Number.isFinite(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const valid=b=>b&&[b.t,b.open,b.high,b.low,b.close].every(finite)&&b.high>=Math.max(b.open,b.close,b.low)&&b.low<=Math.min(b.open,b.close,b.high);
 const dir=x=>x>0?'buy':x<0?'sell':null;
@@ -149,7 +149,55 @@ function technicalConfluence(bars,side,atr){
   wyckoff,session,confirmations,oppositions,counterTrap,confirmTrap,messages};
 }
 
-function turboReview({bars,tf='M5',side,atr,components,regime}={}){
+
+/* v10.2: auditoria de viabilidade do sinal, com entradas e níveis já propostos.
+ * Não é fluxo institucional nem reprodução de código proprietário da VTX.
+ * Análise causal apenas por candles OHLC encerrados. */
+function signalAudit({bars,side,atr,entry,stop,tp1,regime,technical}={}){
+ const empty={ready:false,severity:'indisponível',ema21DistanceAtr:null,impulseAtr:null,rr:null,
+  stretched:false,wickRejection:false,obstacle:null,hardBlocks:[],warnings:[],
+  messages:['A auditoria exige 60 velas fechadas e níveis coerentes de entrada, stop e TP1.']};
+ if(!Array.isArray(bars)||bars.length<60||!['buy','sell'].includes(side)||
+   !finite(atr)||atr<=0||![entry,stop,tp1].every(finite)||!bars.slice(-60).every(valid))
+   return empty;
+ const sign=side==='buy'?1:-1,risk=(entry-stop)*sign,reward=(tp1-entry)*sign;
+ if(risk<=0||reward<=0)return empty;
+ const prices=bars.slice(-60),last=prices.at(-1),prev=prices.at(-4);
+ let ema21=prices[0].close;
+ for(let i=1;i<prices.length;i++)ema21+=2/22*(prices[i].close-ema21);
+ const ema21DistanceAtr=Math.abs(entry-ema21)/atr;
+ const impulseAtr=(last.close-prev.close)*sign/atr;
+ const stretched=ema21DistanceAtr>2.3&&impulseAtr>2;
+ const range=Math.max(last.high-last.low,atr*.01),body=Math.max(Math.abs(last.close-last.open),atr*.03);
+ const wick=side==='buy'?last.high-Math.max(last.close,last.open):Math.min(last.close,last.open)-last.low;
+ const closeStrength=side==='buy'?(last.close-last.low)/range:(last.high-last.close)/range;
+ const wickRejection=wick>body*1.7&&closeStrength<.48;
+ const relevantType=side==='buy'?'H':'L';
+ const obstacles=zones(bars,bars.length-1,atr).filter(z=>{
+   const advance=(z.price-entry)*sign;
+   return z.type===relevantType&&z.count>=2&&z.grade>=3&&z.age<=65&&
+     advance>atr*.15&&advance<reward*.80;
+ }).map(z=>({...z,advance:(z.price-entry)*sign,fraction:(z.price-entry)*sign/reward}))
+   .sort((a,b)=>a.fraction-b.fraction);
+ const obstacle=obstacles.length?obstacles[0]:null;
+ const warnings=[],hardBlocks=[];
+ if(stretched)warnings.push('Preço esticado frente à EMA21 após impulso recente: risco de entrada tardia.');
+ if(wickRejection)warnings.push('Pavio e fechamento sugerem rejeição contra o sinal.');
+ if(obstacle)warnings.push('Pivô recorrente de preço antes do TP1 ('+Math.round(obstacle.fraction*100)+'% do percurso).');
+ if(regime?.trendConflict)warnings.push('Tendência contextual contrária: exigir reversão confirmada.');
+ if(technical?.oppositions>=2)warnings.push('Indicadores derivados do preço contradizem o viés.');
+ if(obstacle&&obstacle.fraction<.43&&obstacle.age<=42)
+   hardBlocks.push('Barreira de topos/fundos recorrentes antes de 43% do percurso ao TP1; aguardar superação ou novo plano.');
+ if(ema21DistanceAtr>3&&impulseAtr>2.5)
+   hardBlocks.push('Entrada excessivamente distante da EMA21 após forte impulso; aguardar pullback.');
+ const severity=hardBlocks.length?'alta':warnings.length>=2?'moderada':warnings.length?'atenção':'baixa';
+ return {ready:true,severity,ema21DistanceAtr,impulseAtr,rr:reward/risk,
+  stretched,wickRejection,obstacle:obstacle?{price:obstacle.price,count:obstacle.count,age:obstacle.age,
+    fraction:obstacle.fraction,distanceAtr:obstacle.advance/atr}:null,
+  hardBlocks,warnings,messages:warnings.length?warnings:['Sem obstáculo recorrente ou exaustão identificada pelos critérios OHLC.']};
+}
+
+function turboReview({bars,tf='M5',side,atr,components,regime,entry,stop,tp1}={}){
   const rows=Array.isArray(components)?components.map(x=>({...x})):[];
   const s=structure(bars,Array.isArray(bars)?bars.length-1:-1,atr,side,tf);
   const mod=(name,change,why)=>{
@@ -158,6 +206,7 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
     if(r.earned!==before)r.note+=' · '+why;
   };
   const evidence=[],technical=technicalConfluence(bars,side,atr);
+  const audit=signalAudit({bars,side,atr,entry,stop,tp1,regime,technical});
   // Indicadores do mesmo candle/regime NÃO são evidências independentes.
   const structureScore=rows.find(x=>x.name==='Estrutura e price action')?.earned||0;
   const trendScore=rows.find(x=>x.name==='Médias e momentum')?.earned||0;
@@ -200,11 +249,17 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
       mod('Médias e momentum',-2,'oscilador estendido; risco de exaustão');
     evidence.push(...technical.messages);
   }else evidence.push('RSI/MACD/Bollinger não calculados: histórico fechado insuficiente');
+  if(audit.ready){
+    if(audit.obstacle)mod('Estrutura e price action',audit.hardBlocks.length?-6:-2,'barreira recorrente antes do alvo');
+    if(audit.stretched)mod('Médias e momentum',-4,'entrada esticada versus EMA21');
+    if(audit.wickRejection)mod('Liquidez e armadilhas',-3,'pavio contra o sinal');
+    evidence.push('Auditoria v10.2: '+audit.severity+' · '+audit.messages.join(' '));
+  }
   if(tf==='M1'&&rows.find(x=>x.name==='Confluência M1–H1')?.earned<=5){
     mod('Confluência M1–H1',-2,'M1 sem confirmação alta');
   }
   return {version:VERSION,components:rows,independentDirection:s.direction,directionConfidence:s.confidence,
-    structure:s,technical,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
+    structure:s,technical,audit,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
 }
 function summarize(rows,engine,{costR=0}={}){
   costR=finite(costR)?clamp(costR,0,2):0;
@@ -267,5 +322,5 @@ function selfTest(){
   return {ok:causal&&dedup&&p.n===2&&p.pending===1&&p.meanR>.39&&p.meanR<.41,
     tests:{noFutureLeak:causal,correlationPenalty:dedup,observedOnly:p.n===2&&p.pending===1,meanR:p.meanR}};
 }
-return {VERSION,FRAME,valid,pivots,zones,structure,technicalConfluence,classicReview,turboReview,summarize,selfTest};
+return {VERSION,FRAME,valid,pivots,zones,structure,technicalConfluence,signalAudit,classicReview,turboReview,summarize,selfTest};
 });
