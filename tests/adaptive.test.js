@@ -37,7 +37,7 @@ assert.ok(html.indexOf('<script src="./storm-adaptive.js"></script>')<html.index
 assert.ok(html.includes('turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE'));
 assert.ok(html.includes('const operational=eligibleOperational&&adaptive.ready;'));
 assert.ok(html.includes('ready:selection.ready&&adaptive.ready'));
-const scripts=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
+const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
 assert.ok(scripts.length>=20);
 for(let i=0;i<scripts.length;i++)new vm.Script(scripts[i],{filename:'index-script-'+i+'.js'});
 console.log('OK: '+scripts.length+' inline scripts, causal filters, calibration, walk-forward, Copy >83 intact');
