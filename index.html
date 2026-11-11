@@ -1306,7 +1306,8 @@ function normalOHLC(arr,tf,now=Date.now()){
  for(const x of arr||[]){
   if(!x||x.isOpen===true||x.isOpen==='true')continue;
   const rawTime=x.openTime??x.time??x.t??x.timestamp;
-  const t=typeof rawTime==='number'?(rawTime<1e11?rawTime*1000:rawTime):Date.parse(String(rawTime||''));
+  const raw=String(rawTime??'').trim(),numeric=/^\d{10,16}$/.test(raw)?Number(raw):null;
+  const t=typeof rawTime==='number'?(rawTime<1e11?rawTime*1000:rawTime):numeric!==null?(numeric<1e11?numeric*1000:numeric):Date.parse(raw);
   const b={t,open:Number(x.open??x.o),high:Number(x.high??x.h),low:Number(x.low??x.l),close:Number(x.close??x.c),volume:Number.isFinite(Number(x.volume))?Number(x.volume):null,tickVolume:Number(x.tickVolume||0)};
   if(!Number.isFinite(t)||t+ms>now-350||!validPrice(b))continue;
   unique.set(t,b);
@@ -1324,8 +1325,9 @@ function validateRange(asset,bars,ms){
  if((asset==='BTCUSD'||asset==='BTCUSDT')&&c<1000)throw Error('Cotação BTC fora da faixa plausível; dado rejeitado.');
 }
 async function request(url,signal){
+ if(signal?.aborted)throw Error('Consulta cancelada');
  const ac=new AbortController(),onAbort=()=>ac.abort(),kill=setTimeout(()=>ac.abort(),11000);
- if(signal){if(signal.aborted)throw Error('Consulta cancelada');signal.addEventListener('abort',onAbort,{once:true})}
+ if(signal)signal.addEventListener('abort',onAbort,{once:true})
  try{
   const r=await fetch(url,{signal:ac.signal,cache:'no-store',headers:{Accept:'application/json'}});
   if(!r.ok){let detail='';try{const data=await r.json();detail=String(data.error||data.message||'').slice(0,180)}catch{}throw Error('HTTP '+r.status+(detail?' — '+detail:''));}
@@ -1738,7 +1740,7 @@ function enhance(original,c,i,ctx={},opts={}){
   legacy:{side:original.side,score:original.score,quality:original.quality,stopDist:original.stopDist,targetDist:original.targetDist},closedAt}};
 }
 function resolve(rows,c,tf){const ms=FRAMES[tf]||300000,index=new Map(c.map((x,i)=>[x.t,i]));let changes=0;
- for(const row of rows){if(row.status!=='pending')continue;const i=index.get(row.t);if(i===undefined)continue;
+ for(const row of rows){if(row.status!=='pending')continue;const i=index.get(row.t);if(i===undefined){if(c.length&&c.at(-1).t>=row.t+(row.horizon||3)*ms){row.status='incomplete';row.resolvedAtCandle=null;changes++;}continue;}
   let done=false;const last=Math.min(c.length-1,i+row.horizon);
   for(let j=i+1;j<=last;j++){
    if(c[j].t-c[j-1].t!==ms){row.status='incomplete';row.resolvedAtCandle=c[j].t+ms;done=true;break;}
@@ -2073,7 +2075,7 @@ async function loadTF(asset,tf,jobEpoch=epoch,manual=false){
   if(manual&&tf===selectedTF)toast('Nova vela confirmada de '+asset+' / '+tf+'.');
  }catch(e){if(jobEpoch!==epoch||asset!==selectedAsset||forceDemo)return;
   const msg=e.message||'Falha ao receber candles';
-  if(prior){snapshots.set(key,{...prior,error:msg,lastAttempt:Date.now()});if(tf===selectedTF)activateSnapshot();else renderOverview()}
+  if(prior){snapshots.set(key,{...prior,providerStale:true,error:msg,lastAttempt:Date.now()});if(tf===selectedTF)activateSnapshot();else renderOverview()}
   else{snapshots.set(key,{mode:'empty',asset,tf,closedAt:0,lastAttempt:Date.now(),error:msg});if(tf===selectedTF)clearActive(msg);else renderOverview()}
   if(manual&&tf===selectedTF)toast(msg);
  }finally{if(requests.get(key)?.controller===controller)requests.delete(key);$('refreshBtn').disabled=false;}}
@@ -3049,7 +3051,7 @@ function planFor(data,struct,macro){const a=data?.state?.analysis,asset=data?.as
  const costs=data?.settings||{},perUnit=Math.max(0,Number(costs.spread)||0)+2*Math.max(0,Number(costs.slippage)||0);
  const estimatedNetRR=hasLevels?Math.max(0,baseTarget-perUnit)/(stopDist+perUnit):null;
  const mtf=Object.keys(FRAMES).map(t=>{
-  const s=data?.snapshots?.[t],fresh=s?.mode==='live'&&s?.candles?.length&&!(s?.providerStale)&&finite(s.closedAt)&&Date.now()-s.closedAt<FRAMES[t]*2+45000;
+  const s=data?.snapshots?.[t],fresh=s?.mode==='live'&&s?.candles?.length&&!(s?.providerStale)&&finite(s.closedAt)&&finite(data?.state?.closedAt)&&s.closedAt<=data.state.closedAt&&Date.now()-s.closedAt<FRAMES[t]*2+45000;
   return {tf:t,side:s?.analysis?.side||'wait',fresh:!!fresh,score:finite(s?.analysis?.score)?s.analysis.score:null};
  });
  const aligned=mtf.filter(x=>x.fresh&&x.side===side).length,available=mtf.filter(x=>x.fresh).length;
@@ -3077,7 +3079,7 @@ function detectAndSave(data,plan){if(!enabled||!plan.ready||!plan.hasData)return
   source:plan.source,mode:'live',origin:'observed_turbo',ruleVersion:'v83-turbo-1',firstFutureAt:null});
  saveLedger(data.asset,data.tf,records);
 }
-function outcome(record,candles,tf){const idx=candles.findIndex(x=>x.t===record.t);if(idx<0)return record; // sem candle inicial, não inferir.
+function outcome(record,candles,tf){const idx=candles.findIndex(x=>x.t===record.t);if(idx<0){const last=candles.at(-1)?.t,ms=FRAMES[tf];return finite(last)&&finite(ms)&&last>=record.t+(record.maxBars||MAX_HORIZON)*ms?{...record,status:'incompleto',reason:'Vela de origem ausente do histórico; resultado não verificável'}:record;} // sem candle inicial, não inferir.
  const direction=record.side==='buy'?1:-1,tfMs=FRAMES[tf],maxBars=record.maxBars||MAX_HORIZON;
  let level=0,seen=0,firstFutureAt=null,stopSeen=false,unknown=false,ambiguous=false;
  for(let j=idx+1;j<candles.length&&seen<maxBars;j++){
@@ -3943,7 +3945,7 @@ function computeForCopy(asset,tf,bar){
  // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
  // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
  // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
- const valid=Boolean(turboValid&&levels&&quality?.fresh&&
+ const valid=Boolean(turboValid&&levels&&quality?.fresh&&quality?.valid&&!quality?.gaps&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
@@ -3953,7 +3955,7 @@ function computeForCopy(asset,tf,bar){
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
- if(idx<0)return r; // sem candle do sinal: não criar desfecho por aproximação
+ if(idx<0)return bars.at(-1)?.t>=r.t+6*ms?{...r,status:'incompleto',reason:'Vela de entrada fora do histórico; resultado não verificável'}:r; // nunca inventar take/stop
  let seen=0,prevT=r.t;
  for(let i=idx+1;i<bars.length&&seen<6;i++){
   const b=bars[i];
