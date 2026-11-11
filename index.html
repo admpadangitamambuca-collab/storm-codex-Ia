@@ -1477,7 +1477,7 @@ return {PERIOD,normalOHLC,validateRange,load,biquote,binance,resolveNasdaq};
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
-const VERSION='10.0-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
+const VERSION='10.1-dual-engine',FRAME={M1:60000,M5:300000,M15:900000,H1:3600000};
 const finite=x=>typeof x==='number'&&Number.isFinite(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const valid=b=>b&&[b.t,b.open,b.high,b.low,b.close].every(finite)&&b.high>=Math.max(b.open,b.close,b.low)&&b.low<=Math.min(b.open,b.close,b.high);
 const dir=x=>x>0?'buy':x<0?'sell':null;
@@ -1566,6 +1566,58 @@ function classicReview({bars,at,atr,side,tf='M5',waves,pa,mtf,market}={}){
   if(market?.sideways&&!s.retest&&!pa?.rejection&&s.direction!==side)delta-=1;
   return {version:VERSION,delta:clamp(delta,-9,5),structure:s,messages};
 }
+
+/* Confluências inspiradas em métodos públicos da VTX Trade IA: não reproduz seu
+ * algoritmo proprietário. Todos os cálculos são OHLC causais de velas fechadas.
+ * Indicadores correlacionados não contam como provas independentes. */
+function technicalConfluence(bars,side,atr){
+ const empty={ready:false,rsi:null,macd:null,macdSignal:null,macdHistogram:null,
+  bollinger:null,wyckoff:'não identificado',session:'indisponível',confirmations:0,oppositions:0,messages:['Indicadores sem histórico fechado suficiente']};
+ if(!Array.isArray(bars)||bars.length<54||!['buy','sell'].includes(side)||
+   !finite(atr)||atr<=0||!bars.slice(-54).every(valid))return empty;
+ const last=bars.at(-1),price=last.close,closes=bars.map(x=>x.close);
+ const n=14;let gains=0,losses=0;
+ for(let j=1;j<=n;j++){const d=closes[j]-closes[j-1];gains+=Math.max(0,d);losses+=Math.max(0,-d);}
+ let avgUp=gains/n,avgDown=losses/n;
+ for(let j=n+1;j<closes.length;j++){const d=closes[j]-closes[j-1];
+   avgUp=(avgUp*(n-1)+Math.max(0,d))/n;avgDown=(avgDown*(n-1)+Math.max(0,-d))/n;}
+ const rsi=avgDown===0?(avgUp===0?50:100):100-100/(1+avgUp/avgDown);
+ let fast=closes[0],slow=closes[0],macdSignal=0,histPrev=0,macd=0,hist=0;
+ for(let j=1;j<closes.length;j++){
+   fast+=(2/13)*(closes[j]-fast);slow+=(2/27)*(closes[j]-slow);
+   macd=fast-slow;histPrev=hist;macdSignal+=(2/10)*(macd-macdSignal);hist=macd-macdSignal;
+ }
+ const window=closes.slice(-20),mid=window.reduce((a,b)=>a+b,0)/20;
+ const deviation=Math.sqrt(window.reduce((a,b)=>a+(b-mid)**2,0)/20);
+ const upper=mid+2*deviation,lower=mid-2*deviation;
+ const bandwidth=mid!==0?(upper-lower)/Math.abs(mid):0;
+ const channel=price>=upper?'faixa superior':price<=lower?'faixa inferior':'dentro das bandas';
+ const high=Math.max(...bars.slice(-21,-1).map(x=>x.high));
+ const low=Math.min(...bars.slice(-21,-1).map(x=>x.low));
+ const spring=last.low<low-.05*atr&&last.close>low+.03*atr&&last.close>last.open;
+ const upthrust=last.high>high+.05*atr&&last.close<high-.03*atr&&last.close<last.open;
+ const wyckoff=spring?'spring OHLC (reação após varredura)':upthrust?'upthrust OHLC (rejeição de topo)':'sem spring/upthrust confirmado';
+ const favour=side==='buy'?1:-1;
+ const rsiScore=rsi>=52&&rsi<=74?1:rsi<=48&&rsi>=26?-1:0;
+ const macdScore=hist>0&&hist>=histPrev?1:hist<0&&hist<=histPrev?-1:0;
+ const bandScore=price>mid&&price<upper+atr*.15?1:price<mid&&price>lower-atr*.15?-1:0;
+ const votes=[rsiScore,macdScore,bandScore];
+ const confirmations=votes.filter(v=>v===favour).length,oppositions=votes.filter(v=>v===-favour).length;
+ const counterTrap=(side==='buy'&&upthrust)||(side==='sell'&&spring);
+ const confirmTrap=(side==='buy'&&spring)||(side==='sell'&&upthrust);
+ const hour=new Date(last.t).getUTCHours();
+ const session=hour>=13&&hour<17?'sobreposição Londres–NY (UTC)':
+  hour>=7&&hour<13?'sessão europeia (UTC)':hour>=17&&hour<22?'sessão americana tardia (UTC)':'fora da sobreposição principal (UTC)';
+ const messages=[
+   'RSI(14) '+rsi.toFixed(1)+'; MACD(12,26,9) hist '+hist.toFixed(5),
+   'Bollinger(20,2): '+channel+'; largura '+(bandwidth*100).toFixed(2)+'%',
+   'Wyckoff por OHLC: '+wyckoff+' (sem confirmação de volume institucional)',
+   'Janela: '+session+' (informativa; sem taxa de acerto presumida)'
+ ];
+ return {ready:true,rsi,macd,macdSignal,macdHistogram:hist,bollinger:{mid,upper,lower,bandwidth,channel},
+  wyckoff,session,confirmations,oppositions,counterTrap,confirmTrap,messages};
+}
+
 function turboReview({bars,tf='M5',side,atr,components,regime}={}){
   const rows=Array.isArray(components)?components.map(x=>({...x})):[];
   const s=structure(bars,Array.isArray(bars)?bars.length-1:-1,atr,side,tf);
@@ -1574,7 +1626,7 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
     const before=r.earned;r.earned=clamp(r.earned+change,0,r.max);
     if(r.earned!==before)r.note+=' · '+why;
   };
-  const evidence=[];
+  const evidence=[],technical=technicalConfluence(bars,side,atr);
   // Indicadores do mesmo candle/regime NÃO são evidências independentes.
   const structureScore=rows.find(x=>x.name==='Estrutura e price action')?.earned||0;
   const trendScore=rows.find(x=>x.name==='Médias e momentum')?.earned||0;
@@ -1602,11 +1654,26 @@ function turboReview({bars,tf='M5',side,atr,components,regime}={}){
     mod('Liquidez e armadilhas',-5,'rompimento devolvido');
     evidence.push('Armadilha adicional contra a direção detectada');
   }
+  if(technical.ready){
+    // Os três osciladores derivam do MESMO preço: bônus de até 1 ponto,
+    // mas contradições fortes e armadilhas impactam o sinal.
+    if(technical.confirmations>=2&&technical.oppositions===0)
+      mod('Médias e momentum',1,'RSI/MACD/Bollinger concordantes, bônus limitado');
+    if(technical.oppositions>=2)
+      mod('Médias e momentum',-3,'RSI/MACD/Bollinger contraditórios');
+    if(technical.counterTrap)
+      mod('Liquidez e armadilhas',-4,'rejeição Wyckoff OHLC oposta');
+    if(technical.confirmTrap)
+      mod('Liquidez e armadilhas',1,'reação Wyckoff OHLC favorável');
+    if((side==='buy'&&technical.rsi>82)||(side==='sell'&&technical.rsi<18))
+      mod('Médias e momentum',-2,'oscilador estendido; risco de exaustão');
+    evidence.push(...technical.messages);
+  }else evidence.push('RSI/MACD/Bollinger não calculados: histórico fechado insuficiente');
   if(tf==='M1'&&rows.find(x=>x.name==='Confluência M1–H1')?.earned<=5){
     mod('Confluência M1–H1',-2,'M1 sem confirmação alta');
   }
   return {version:VERSION,components:rows,independentDirection:s.direction,directionConfidence:s.confidence,
-    structure:s,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
+    structure:s,technical,scoreDelta:rows.reduce((n,x)=>n+x.earned,0)-components.reduce((n,x)=>n+x.earned,0),messages:evidence};
 }
 function summarize(rows,engine,{costR=0}={}){
   costR=finite(costR)?clamp(costR,0,2):0;
@@ -1669,9 +1736,8 @@ function selfTest(){
   return {ok:causal&&dedup&&p.n===2&&p.pending===1&&p.meanR>.39&&p.meanR<.41,
     tests:{noFutureLeak:causal,correlationPenalty:dedup,observedOnly:p.n===2&&p.pending===1,meanR:p.meanR}};
 }
-return {VERSION,FRAME,valid,pivots,zones,structure,classicReview,turboReview,summarize,selfTest};
+return {VERSION,FRAME,valid,pivots,zones,structure,technicalConfluence,classicReview,turboReview,summarize,selfTest};
 });
-
 </script>
 <script id="v93-classic-engine">
 /* VÓRTEX PIRATA 9.3 — CLÁSSICO PRECISION
@@ -1881,7 +1947,7 @@ function learn(rows,asset,tf,setup,at){
 function enhance(original,c,i,ctx={},opts={}){
  if(!original||!Array.isArray(c)||i<1||i>=c.length||!validCandle(c[i])||!validCandle(c[i-1]))return original;
  const tf=ctx.tf||'M5',asset=ctx.asset||'XAUUSD',a=Math.max(1e-9,Number(ctx.aa?.[i])||0),check=audit(c,i,ctx),r=regime(c,i,ctx),v=candle(c,i,a);
- const p=c[i].close,closedAt=c[i].t+(FRAMES[tf]||300000),side=['buy','sell'].includes(original.side)?original.side:(ctx.e9?.[i]>ctx.e21?.[i]?'buy':'sell');
+ const p=c[i].close,closedAt=c[i].t+(FRAMES[tf]||300000),side=['buy','sell'].includes(original.side)?original.side:original.oneCandleGate?.originalSide||((ctx.e9?.[i]>ctx.e21?.[i])?'buy':'sell');
  const pa=priceAction(c,i,a,side); // TF próprio com maior participação na entrada
  const waves=elliott(c,i,a,side); // só Clássico, sem tocar o Turbo
  const buy=side==='buy',emaDir=ctx.e9?.[i]>=ctx.e21?.[i]?'buy':'sell';
@@ -1912,7 +1978,7 @@ function enhance(original,c,i,ctx={},opts={}){
  if(oppositeTrap)score-=14;if(r.highVol)score-=14;if(!check.valid)score-=20;
  // Um índice técnico alto com risco inválido induz erro: limitar a nota final quando não existe relação operacional.
  if(netRR<1.2)score=Math.min(score,65);
- if(gold&&!(goldGate?.accepted===true&&target>3))score=Math.min(score,62);
+ if(gold&&!(goldGate?.accepted===true&&target>=4))score=Math.min(score,62);
  score=clamp(score,0,95);
  // Aprendizado: só observações em tempo real, encerradas ANTES do candle presente.
  const training=(ctx.mode==='live'&&opts.learning!==false)?learn(load(asset,tf),asset,tf,setup,closedAt):{active:false,n:0,adjustment:0,reason:'Sem ajuste no replay ou em modo demo'};
@@ -1922,7 +1988,7 @@ function enhance(original,c,i,ctx={},opts={}){
  const validBasis=['buy','sell'].includes(original.side)&&original.quality!=='EVITAR'&&!original.preliminary&&c.length>=45&&check.valid&&!r.highVol&&!oppositeTrap&&!levels.stopTooFar&&pa.confirmed;
  const directionalSetup=setup==='ROMPIMENTO'||setup==='CONTINUAÇÃO'||setup==='RETESTE'||setup==='REJEIÇÃO DE FAIXA';
  const minScore=({M1:76,M5:74,M15:72,H1:71}[tf]||74)+(asset.startsWith('BTC')?2:asset==='NASDAQ'?1:0);
- const goldOk=!gold||goldGate?.accepted===true&&finite(target)&&target>3;
+ const goldOk=!gold||goldGate?.accepted===true&&finite(target)&&target>=4;
  const operational=ctx.mode==='live'&&validBasis&&directionalSetup&&score>=minScore&&netRR>=1.2&&mtf.weighted>=-.35&&goldOk&&target>0&&stop>0;
  const reasons=[]; if(evolution)reasons.push('Evolução v10: '+evolution.messages.join(' | ')+' · ajuste '+(evolution.delta>0?'+':'')+evolution.delta+' pontos');
  reasons.push('Regime: '+r.name+' · ATR relativo '+r.volRatio.toFixed(2)+'×');
@@ -1935,11 +2001,11 @@ function enhance(original,c,i,ctx={},opts={}){
  if(original.quality==='EVITAR')reasons.push('Filtro original 8.2 mantém EVITAR, sem liberação pela camada Precision.');
  if(levels.stopTooFar)reasons.push('Stop estrutural excede 2,3 ATR: operação bloqueada.');
  if(!pa.confirmed)reasons.push('Price Action sem gatilho confirmado no '+tf+' selecionado: entrada bloqueada.');
- if(gold&&!goldOk)reasons.push('Filtro XAUUSD v7.6 preservado: exige projeção superior a US$ 3 em UMA vela.');
+ if(gold&&!goldOk)reasons.push('Filtro XAUUSD v10.1: exige projeção de pelo menos US$ 4,00 em UMA vela.');
  if(ctx.mode!=='live')reasons.push('MODO DEMONSTRAÇÃO: leitura simulada, nunca liberada para operação.');
  if(!operational)reasons.push('EVITAR OPERAÇÃO: falta confirmação, risco/retorno ou integridade de dados.');
  const riskMeta={...(original.riskMeta||{}),rr:stop?target/stop:0,netRR,stopBasis:'swing recente + margem ATR, com limites de volatilidade',targetBasis:gold?'filtro causal original de UMA vela (sem ampliar a projeção)':'ATR com limite da estrutura recente'};
- return {...original,side,price:p,t:c[i].t,score,quality:operational?(score>=84?'ALTA':'MODERADA'):'EVITAR',targetDist:target,stopDist:stop,netRR,riskMeta,
+ return {...original,side:gold&&!goldOk?'wait':side,candidateSide:side,price:p,t:c[i].t,score,quality:operational?(score>=84?'ALTA':'MODERADA'):'EVITAR',targetDist:target,stopDist:stop,netRR,riskMeta,
   operationalReason:operational?'Confluência técnica validada; não é ordem de execução.':reasons.at(-1),
   reasons:[...reasons,...(original.reasons||[]).slice(0,2)],regime:r.name,setup:{...original.setup,id:setup,name:setup,regime:r.name,fit:score},
   strategyId:'v93-'+setup.toLowerCase().replace(/\s+/g,'-'),strategyName:'Precision '+setup,horizon:gold?1:Math.max(1,Math.min(3,original.horizon||3)),
@@ -2019,11 +2085,11 @@ return {VERSION,validCandle,audit,regime,candle,priceAction,elliott,mtfEvidence,
 
 </script>
 <script>
-/* SMART GOLD AI v7.7 — filtro causal XAUUSD: movimento projetado > US$3 em UMA vela.
+/* SMART GOLD AI v7.7 — filtro causal XAUUSD: movimento projetado ≥ US$4 em UMA vela.
    Projeção heurística baseada APENAS nas velas já fechadas. Não é probabilidade
    nem garantia de movimento no próximo candle. Sem dados suficientes = AGUARDAR. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SGV76Filter=api;})(typeof window!=='undefined'?window:globalThis,function(){'use strict';
- const LIMIT_USD=3,LOOKBACK=40;
+ const LIMIT_USD=4,LOOKBACK=40;
  const finite=n=>Number.isFinite(n)&&n>=0;
  function estimate(c,i,side,context){
   const atr=Number(context?.aa?.[i]);
@@ -2051,12 +2117,12 @@ return {VERSION,validCandle,audit,regime,candle,priceAction,elliott,mtfEvidence,
   // estimativa da próxima vela; somente limitam a distância alcançável.
   const previousTarget=Number(signal.targetDist);
   const potential=finite(projected.distance)&&finite(previousTarget)?Math.min(projected.distance,previousTarget):null;
-  const accepted=['buy','sell'].includes(signal.side)&&Number.isFinite(potential)&&potential>LIMIT_USD+1e-9;
+  const accepted=['buy','sell'].includes(signal.side)&&Number.isFinite(potential)&&potential>=LIMIT_USD;
   const gate={accepted,threshold:LIMIT_USD,projectedOneCandle:potential,rawOneCandle:projected.distance,lookback:projected.lookback,originalSide:signal.side,
    basis:projected.reason,horizon:1};
   if(!accepted){
-   const reason=Number.isFinite(potential)?`EVITAR OPERAÇÃO: projeção de uma vela US$ ${potential.toFixed(2)}; filtro operacional exige MAIS de US$ 3,00.`:'EVITAR OPERAÇÃO: projeção de uma vela não validada com histórico disponível.';
-   return {...signal,side:signal.side,quality:'EVITAR',oneCandleGate:gate,oneCandleProjection:potential,horizon:1,
+   const reason=Number.isFinite(potential)?`AGUARDAR: projeção de uma vela US$ ${potential.toFixed(2)}; exige pelo menos US$ 4,00 para sinal de compra ou venda.`:'EVITAR OPERAÇÃO: projeção de uma vela não validada com histórico disponível.';
+   return {...signal,side:'wait',candidateSide:signal.side,quality:'EVITAR',oneCandleGate:gate,oneCandleProjection:potential,horizon:1,
     operationalReason:reason,reasons:[reason,...(signal.reasons||[])],targetDist:Number.isFinite(potential)?potential:0,netRR:0};
   }
   const cost=Math.max(0,Number(signal.costPerUnit)||0),stop=Number(signal.stopDist);
@@ -2065,10 +2131,10 @@ return {VERSION,validCandle,audit,regime,candle,priceAction,elliott,mtfEvidence,
    targetBasis:'projeção do corpo direcional de UMA vela, limitada por resistência/suporte e ATR'};
   const lowRR=!Number.isFinite(netRR)||netRR<1.1;
   const quality=lowRR?'EVITAR':signal.quality;
-  const reason=lowRR?'Variação > US$ 3, mas relação recompensa/risco é insuficiente':signal.operationalReason;
+  const reason=lowRR?'Projeção ≥ US$ 4, mas relação recompensa/risco é insuficiente':signal.operationalReason;
   return {...signal,targetDist:potential,horizon:1,netRR,riskMeta,quality,operationalReason:reason,
    oneCandleGate:gate,oneCandleProjection:potential,
-   reasons:[`Projeção de UMA vela > US$ 3,00: US$ ${potential.toFixed(2)}; filtro v7.6 aprovado (não é garantia).`,...(signal.reasons||[])]};
+   reasons:[`Projeção de UMA vela ≥ US$ 4,00: US$ ${potential.toFixed(2)}; filtro v10.1 aprovado (não é garantia).`,...(signal.reasons||[])]};
  }
  return {LIMIT_USD,LOOKBACK,estimate,apply};
 });
@@ -2432,7 +2498,7 @@ function renderKpis(){const c=state.candles;if(!c.length)return;const last=c.at(
  $('volumeLabel').textContent=hasVol?'Vol. total informado':'Volume indisponível';}
 function pressure(cs){let b=0,s=0;for(const v of cs){const range=Math.max(.00001,v.high-v.low),weight=Number.isFinite(v.volume)&&v.volume>0?v.volume:range,position=clamp((v.close-v.low)/range,.02,.98);b+=weight*position;s+=weight*(1-position)}const sum=b+s||1;return {buy:100*b/sum,sell:100*s/sum}}
 function renderSignal(){const a=state.analysis;if(!a)return;const dir=a.side,br=dir==='buy'?'COMPRA':dir==='sell'?'VENDA':'AGUARDAR',sig=$('signalName');sig.textContent=br;sig.className='signal-name '+(dir==='buy'?'buy':dir==='sell'?'sell':'wait');
- const dt=fmtBR(state.closedAt,true);$('signalCandle').textContent='Candle '+selectedTF+' fechado • '+dt+(a.oneCandleGate?' · filtro > US$ 3,00 na PRÓXIMA vela':'');
+ const dt=fmtBR(state.closedAt,true);$('signalCandle').textContent='Candle '+selectedTF+' fechado • '+dt+(a.oneCandleGate?' · filtro ≥ US$ 4,00 na PRÓXIMA vela':'');
  $('signalSummary').textContent=dir==='wait'?(a.oneCandleGate?.basis? a.operationalReason : 'Histórico insuficiente: nenhum sinal foi criado.'):(dir==='buy'?'Viés técnico comprador':'Viés técnico vendedor')+' na vela fechada. '+(a.quality==='EVITAR'?'EVITAR OPERAÇÃO · '+(a.operationalReason||'filtros desfavoráveis'):a.quality==='ALTA'?'Setup técnico favorável':'Setup técnico moderado')+'. Não equivale a ordem.';
  const score=Number.isFinite(a.score)?a.score:0,st=state.stats?.by?.[dir];
  $('signalStrategySummary').textContent=a.setup?'Estratégia selecionada: '+a.setup.name+' · cenário '+a.setup.regime+' · adequação '+a.setup.fit+'/100':'Estratégia: aguardando confirmação';
@@ -2444,9 +2510,9 @@ function renderSignal(){const a=state.analysis;if(!a)return;const dir=a.side,br=
  $('v71Liquidity').textContent=a.liquidity?`${a.liquidity.kind.toUpperCase()} · ${a.liquidity.detail}`:'Aguardando candles válidos';$('scoreBar').style.width=score+'%';$('scoreText').textContent=score+'/100';$('signalScoreName').textContent='SCORE TÉCNICO (0–100) · NÃO É PROBABILIDADE REAL';
  $('histRate').textContent=a.v93?(window.SGClassicPrecision93?.stats(selectedAsset,selectedTF)?.rate===null?'—':pct(window.SGClassicPrecision93.stats(selectedAsset,selectedTF).rate*100)):dir==='wait'?'—':state.probability?.available?pct(state.probability.rate*100):'—';
  const move=dir==='wait'||(a.oneCandleGate&&!Number.isFinite(a.oneCandleProjection))?NaN:a.targetDist,stop=dir==='wait'||!(Number(a.stopDist)>0)?NaN:a.stopDist,mult=dir==='buy'?1:-1;
- $('entryPrice').textContent=dir==='wait'?'—':priceFmt(a.price);$('targetPrice').textContent=Number.isFinite(move)?priceFmt(a.price+mult*move):'—';$('stopPrice').textContent=Number.isFinite(stop)?priceFmt(a.price-mult*stop):'—';$('moveUsd').textContent=Number.isFinite(move)?(mult>0?'+':'−')+deltaFmt(move):'—';$('moveUsd').className=dir==='buy'?'green':dir==='sell'?'red':'';$('projectionDirection').textContent=dir==='buy'?'Alta estimada · '+unitLabel():dir==='sell'?'Queda estimada · '+unitLabel():'Variação · '+unitLabel();$('moveExplain').textContent=dir==='wait'?('Nenhum alvo operacional. '+(a.oneCandleGate?.basis?'Projeção para UMA vela abaixo do filtro de US$ 3 ou indisponível.':'Aguardando dados suficientes.')):a.oneCandleGate?'Movimento direcional estimado para UMA vela '+selectedTF+' fechada em seguida. Modelo heurístico; não é lucro, probabilidade nem garantia.':'Projeção ATR para até '+(a.horizon||3)+' velas '+selectedTF+'. Não representa lucro líquido nem previsão garantida.';
+ $('entryPrice').textContent=dir==='wait'?'—':priceFmt(a.price);$('targetPrice').textContent=Number.isFinite(move)?priceFmt(a.price+mult*move):'—';$('stopPrice').textContent=Number.isFinite(stop)?priceFmt(a.price-mult*stop):'—';$('moveUsd').textContent=Number.isFinite(move)?(mult>0?'+':'−')+deltaFmt(move):'—';$('moveUsd').className=dir==='buy'?'green':dir==='sell'?'red':'';$('projectionDirection').textContent=dir==='buy'?'Alta estimada · '+unitLabel():dir==='sell'?'Queda estimada · '+unitLabel():'Variação · '+unitLabel();$('moveExplain').textContent=dir==='wait'?('Nenhum alvo operacional. '+(a.oneCandleGate?.basis?'Projeção para UMA vela abaixo do filtro de US$ 4,00 ou indisponível.':'Aguardando dados suficientes.')):a.oneCandleGate?'Movimento direcional estimado para UMA vela '+selectedTF+' fechada em seguida. Modelo heurístico; não é lucro, probabilidade nem garantia.':'Projeção ATR para até '+(a.horizon||3)+' velas '+selectedTF+'. Não representa lucro líquido nem previsão garantida.';
  $('signalReasons').innerHTML=(a.reasons||[]).slice(0,7).map(r=>'<li>'+safe(r)+'</li>').join('');
- $('signalStatus').textContent=state.mode==='demo'?'SIMULAÇÃO':state.providerStale||isLagging()?'DADO HISTÓRICO':state.futures?'ATIVO DIVERGENTE':dir==='wait'?(a.oneCandleGate?'ABAIXO DE US$ 3/VELA':'SEM HISTÓRICO'):a.quality==='EVITAR'?'EVITAR OPERAÇÃO':a.score<70?'SCORE BAIXO':'CANDLE FECHADO';
+ $('signalStatus').textContent=state.mode==='demo'?'SIMULAÇÃO':state.providerStale||isLagging()?'DADO HISTÓRICO':state.futures?'ATIVO DIVERGENTE':dir==='wait'?(a.oneCandleGate?'ABAIXO DE US$ 4/VELA':'SEM HISTÓRICO'):a.quality==='EVITAR'?'EVITAR OPERAÇÃO':a.score<70?'SCORE BAIXO':'CANDLE FECHADO';
  updateSignalFreshness();
  $('histCaption').textContent=a.v93?(window.SGClassicPrecision93?.stats(selectedAsset,selectedTF)?.rate===null?'Taxa Precision indisponível: requer 30 resultados reais concluídos; sem probabilidade garantida.':'Taxa observada Precision, sem garantia de resultados futuros.'):dir==='wait'?'Sem sinal.':state.probability?.available?`${state.probability.sourceType==='observed'?'Registros ao vivo encerrados':'Replay cronológico (últimos 40%)'}: ${state.probability.wins}/${state.probability.n} atingiram o alvo. Não comprova probabilidade futura.`:`Sem amostra suficiente para calibrar este cenário. Score não é probabilidade.`;
 }
@@ -2871,7 +2937,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       strategyId:selected.strategy,strategyName:selected.name+' · '+tf,fitScore:selected.fit,
       technicalConfidencePct,empiricalChance:chance,
       operationalReason:riskOK?
-        'Estratégia selecionada; aplicar filtro da projeção > US$3 na próxima vela':'Risco/retorno abaixo de 1,10',
+        'Estratégia selecionada; aplicar filtro da projeção ≥ US$4 na próxima vela':'Risco/retorno abaixo de 1,10',
       reasons:[`v7.7 · ${selected.name} (${selected.fit}/100)`,...selected.reasons,...(sig.reasons||[])].slice(0,18),
       riskMeta:{...(sig.riskMeta||{}),netRR,rr:targetDist/stopDist,
         targetBasis:'Fibonacci e ATR; ainda sujeito ao filtro final de uma vela'}});
@@ -3268,7 +3334,7 @@ function planFor(data,struct,macro){const a=data?.state?.analysis,asset=data?.as
  if(!hasLevels)blocked.push('Entrada, stop e alvo técnico não validados pelo motor 8.2.');
  if(a?.preliminary)blocked.push('Leitura preliminar; histórico insuficiente.');
  if(a?.quality==='EVITAR')blocked.push('O motor original classificou o cenário como EVITAR.');
- if(asset==='XAUUSD'&&a?.oneCandleGate&&!a.oneCandleGate.accepted)blocked.push('Filtro do ouro: projeção de uma vela não supera US$ 3.');
+ if(asset==='XAUUSD'&&(!a?.oneCandleGate?.accepted||!hasLevels||distances[0]<4))blocked.push('Filtro do ouro: TP1 precisa projetar pelo menos US$ 4,00 no sentido do sinal.');
  if(macro.danger)blocked.push('Alerta macroeconômico sinaliza cautela.');
  if(available>=2&&aligned<2)blocked.push('Confirmação insuficiente entre os períodos recentes.');
  if(hasLevels&&estimatedNetRR<1.1)blocked.push('Relação recompensa/risco estimada abaixo de 1,10.');
@@ -3756,6 +3822,8 @@ function selectiveGate(data,ctx,analysis){
  const {tf}=data,plan=ctx.plan,side=plan.side,sc=ctx.sc||{};
  const bars=data.state?.candles||[],atr=analysis.atrVal;
  const reasons=[...analysis.brakes];
+ if(data.asset==='XAUUSD'&&(!plan.hasLevels||!number(plan.entry)||!number(plan.targets?.[0])||((side==='buy'?plan.targets[0]-plan.entry:side==='sell'?plan.entry-plan.targets[0]:0)<4)))
+  reasons.push('Ouro: COMPRA/VENDA exige alvo TP1 de no mínimo US$ 4,00 desde a entrada.');
  if(!['buy','sell'].includes(side))reasons.push('Sem direção analisável nesta vela.');
  if(analysis.score<SELECTIVE_SCORE_MIN)reasons.push('Confluência abaixo do mínimo equilibrado de '+SELECTIVE_SCORE_MIN+'/100.');
  if(!analysis.qualityCheck.valid||analysis.qualityCheck.gaps||!analysis.qualityCheck.fresh)
@@ -3925,6 +3993,8 @@ function renderTechnical(data,ctx,an){
  <div class="v90-factors">${an.components.map(x=>`<div class="v90-factor"><div><span>${esc(x.name)}</span><b>${x.earned}/${x.max}</b></div><div class="v90-track"><i style="width:${(100*x.earned/x.max).toFixed(0)}%"></i></div><small>${esc(x.note)}</small></div>`).join('')}</div>
  <div class="v90-alert ${an.trap.risk===ctx.plan.side?'critical':'neutral'}"><b>Detector de armadilhas: ${esc(an.trap.type)}</b><p>${esc(an.trap.message)}</p></div>
  ${row('Regime contextual (OHLC)',an.regime.label+' · '+an.regime.reason)}
+ ${row('Confluência adicional (indicadores públicos)',an.evolution?.technical?.ready?'RSI '+an.evolution.technical.rsi.toFixed(1)+' · MACD hist '+an.evolution.technical.macdHistogram.toFixed(5)+' · Bollinger '+an.evolution.technical.bollinger.channel:'Sem histórico suficiente')}
+ ${row('Sessão UTC / timing',an.evolution?.technical?.session||'Indisponível')}
  ${row('Leitura Wyckoff',ctx.sc?.wyckoff||'Não disponível')}${row('Padrão harmônico',an.pattern?an.pattern.type+' ('+sideName(an.pattern.side)+')':'Não confirmado')}
  ${row('Fib. 38,2%–61,8%',an.fib?(money(an.fib.low,data.asset)+' → '+money(an.fib.high,data.asset)+(an.fib.inside?' · DENTRO':' · fora')):'Sem base')}
  ${row('Confronto XAU com fonte spot',an.crossSource?.reason||'Indisponível')}
@@ -4154,16 +4224,18 @@ function computeForCopy(asset,tf,bar){
  const originalScore=Number(bar?.analysis?.score);
  const turboScore=Number(analysis?.score);
  const turboValid=Number.isFinite(turboScore)&&turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE;
+ const goldDistance=p.side==='buy'?p.targets?.[0]-p.entry:p.side==='sell'?p.entry-p.targets?.[0]:NaN;
+ const goldFourOK=asset!=='XAUUSD'||(Number.isFinite(goldDistance)&&goldDistance>=4);
  // Unico criterio de selecao: score Turbo >83. A aprovacao seletiva do Turbo
  // NAO funciona como um segundo veto. Dados OHLC, direcao e precos coerentes
  // ainda sao pre-requisitos tecnicos para registrar uma simulacao realista.
- const valid=Boolean(turboValid&&levels&&quality?.fresh&&
+ const valid=Boolean(turboValid&&levels&&goldFourOK&&quality?.fresh&&
     ctx.data.state.mode==='live'&&!ctx.data.state.providerStale&&
     (p.side==='buy'||p.side==='sell'));
  return {ready:valid,score:analysis?.score??0,classicScore:Number.isFinite(originalScore)?originalScore:null,ctx,analysis,
  reason:valid?'Confluência Turbo >83/100: operação simulada elegível':
   (!turboValid?'Confluência Turbo precisa ser superior a 83/100':
-   'Falta OHLC recente, direção ou níveis válidos para simular entrada, stop e alvo')};
+   'Falta OHLC recente, direção, alvo XAUUSD de US$ 4,00 ou níveis válidos para simular entrada, stop e alvo')};
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
