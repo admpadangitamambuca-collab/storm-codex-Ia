@@ -1,0 +1,20 @@
+name: Auditoria Storm Codex IA
+on:
+  push:
+    branches:
+      - fix/auditoria-geral-20261111
+  pull_request:
+    branches:
+      - main
+jobs:
+  regressao:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar engines e integridade de sinais
+        run: node --test tests/auditoria.test.cjs
