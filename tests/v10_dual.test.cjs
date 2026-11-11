@@ -3,8 +3,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const core=require('../engine/v10_dual_core.js');
-assert.equal(core.VERSION,'10.0-dual-engine');
+assert.equal(core.VERSION,'10.1-dual-engine');
 assert.equal(core.selfTest().ok,true,'selfTest causal/regression');
+assert.equal(typeof core.technicalConfluence,'function');
+
 const bars=Array.from({length:85},(_,i)=>{
  const p=100+i*.2+Math.sin(i*2.1)*1.1;
  return {t:1700000000000+i*300000,open:p-.15,close:p+.15,high:p+.75,low:p-.75};
