@@ -21,3 +21,8 @@ jobs:
           node-version: '22'
       - name: Validate JS and Copy Trade simulated operations
         run: node tests/copy-trade-smoke.cjs
+      - name: Validate standalone Netlify package and exact app contents
+        run: |
+          unzip -t Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip
+          unzip -p Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip index.html | cmp - index.html
+          unzip -p Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip sw.js | cmp - sw.js
