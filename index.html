@@ -1299,16 +1299,16 @@ window.SMART_GOLD_CONFIG = {
 const PERIOD={M1:{ms:60000,biquote:'1m',binance:'1m'},M5:{ms:300000,biquote:'5m',binance:'5m'},M15:{ms:900000,biquote:'15m',binance:'15m'},H1:{ms:3600000,biquote:'1h',binance:'1h'}};
 const SOURCE={XAUUSD:'XAUUSD',EURUSD:'EURUSD',USDJPY:'USDJPY',USDCAD:'USDCAD',USDCHF:'USDCHF',AUDUSD:'AUDUSD',BTCUSD:'BTCUSD',BTCUSDT:'BTCUSDT'};
 let nasdaqSymbol=null, nasdaqLookupUntil=0;
-function validPrice(b){return [b.open,b.high,b.low,b.close].every(x=>Number.isFinite(x)&&x>0)&&b.high>=Math.max(b.open,b.close)&&b.low<=Math.min(b.open,b.close)}
+function validPrice(b){return [b.open,b.high,b.low,b.close].every(x=>Number.isFinite(x)&&x>0)&&b.high>=Math.max(b.open,b.close)&&b.low<=Math.min(b.open,b.close)&&b.high>=b.low}
 function normalOHLC(arr,tf,now=Date.now()){
  const ms=PERIOD[tf]?.ms;if(!ms)throw Error('Período não suportado: '+tf);
  const unique=new Map();
  for(const x of arr||[]){
   if(!x||x.isOpen===true||x.isOpen==='true')continue;
   const rawTime=x.openTime??x.time??x.t??x.timestamp;
-  const t=typeof rawTime==='number'?(rawTime<1e11?rawTime*1000:rawTime):Date.parse(String(rawTime||''));
+  const t=typeof rawTime==='number'?(rawTime<1e11?rawTime*1000:rawTime):typeof rawTime==='string'&&/^\d{10,13}$/.test(rawTime.trim())?(Number(rawTime)<1e11?Number(rawTime)*1000:Number(rawTime)):Date.parse(String(rawTime??''));
   const b={t,open:Number(x.open??x.o),high:Number(x.high??x.h),low:Number(x.low??x.l),close:Number(x.close??x.c),volume:Number.isFinite(Number(x.volume))?Number(x.volume):null,tickVolume:Number(x.tickVolume||0)};
-  if(!Number.isFinite(t)||t+ms>now-350||!validPrice(b))continue;
+  if(!Number.isFinite(t)||t<=0||t+ms>now-350||!validPrice(b))continue;
   unique.set(t,b);
  }
  return [...unique.values()].sort((a,b)=>a.t-b.t);
@@ -1325,7 +1325,7 @@ function validateRange(asset,bars,ms){
 }
 async function request(url,signal){
  const ac=new AbortController(),onAbort=()=>ac.abort(),kill=setTimeout(()=>ac.abort(),11000);
- if(signal){if(signal.aborted)throw Error('Consulta cancelada');signal.addEventListener('abort',onAbort,{once:true})}
+ if(signal){if(signal.aborted)onAbort();else signal.addEventListener('abort',onAbort,{once:true})}
  try{
   const r=await fetch(url,{signal:ac.signal,cache:'no-store',headers:{Accept:'application/json'}});
   if(!r.ok){let detail='';try{const data=await r.json();detail=String(data.error||data.message||'').slice(0,180)}catch{}throw Error('HTTP '+r.status+(detail?' — '+detail:''));}
@@ -1401,7 +1401,7 @@ return {PERIOD,normalOHLC,validateRange,load,biquote,binance,resolveNasdaq};
   for(const b of candles||[]){
    if(!b||!finite(b.t)||b.t%M15!==0||b.t+M15>now-SAFETY||
       ![b.open,b.high,b.low,b.close].every(finite)||b.open<=0||b.low<=0||
-      b.high<Math.max(b.open,b.close)||b.low>Math.min(b.open,b.close))continue;
+      b.high<Math.max(b.open,b.close)||b.low>Math.min(b.open,b.close)||b.high<b.low)continue;
    const hour=Math.floor(b.t/H1)*H1;
    if(hour+H1>now-SAFETY)continue;
    if(!groups.has(hour))groups.set(hour,new Map());
@@ -1710,6 +1710,9 @@ function enhance(original,c,i,ctx={},opts={}){
  // Aprendizado: só observações em tempo real, encerradas ANTES do candle presente.
  const training=(ctx.mode==='live'&&opts.learning!==false)?learn(load(asset,tf),asset,tf,setup,closedAt):{active:false,n:0,adjustment:0,reason:'Sem ajuste no replay ou em modo demo'};
  score=clamp(score+training.adjustment,0,95);
+ if(netRR<1.2)score=Math.min(score,65);
+ if(gold&&!(goldGate?.accepted===true&&target>3))score=Math.min(score,62);
+ if(!pa.confirmed)score=Math.min(score,70);
  const validBasis=['buy','sell'].includes(original.side)&&original.quality!=='EVITAR'&&!original.preliminary&&c.length>=45&&check.valid&&!r.highVol&&!oppositeTrap&&!levels.stopTooFar&&pa.confirmed;
  const directionalSetup=setup==='ROMPIMENTO'||setup==='CONTINUAÇÃO'||setup==='RETESTE'||setup==='REJEIÇÃO DE FAIXA';
  const minScore=({M1:76,M5:74,M15:72,H1:71}[tf]||74)+(asset.startsWith('BTC')?2:asset==='NASDAQ'?1:0);
@@ -1738,7 +1741,7 @@ function enhance(original,c,i,ctx={},opts={}){
   legacy:{side:original.side,score:original.score,quality:original.quality,stopDist:original.stopDist,targetDist:original.targetDist},closedAt}};
 }
 function resolve(rows,c,tf){const ms=FRAMES[tf]||300000,index=new Map(c.map((x,i)=>[x.t,i]));let changes=0;
- for(const row of rows){if(row.status!=='pending')continue;const i=index.get(row.t);if(i===undefined)continue;
+ for(const row of rows){if(row.status!=='pending')continue;const i=index.get(row.t);if(i===undefined){if(c.length&&finite(row.t)&&c[0].t>row.t){row.status='incomplete';row.resolvedAtCandle=c[0].t+ms;changes++;}continue;}
   let done=false;const last=Math.min(c.length-1,i+row.horizon);
   for(let j=i+1;j<=last;j++){
    if(c[j].t-c[j-1].t!==ms){row.status='incomplete';row.resolvedAtCandle=c[j].t+ms;done=true;break;}
@@ -2073,7 +2076,7 @@ async function loadTF(asset,tf,jobEpoch=epoch,manual=false){
   if(manual&&tf===selectedTF)toast('Nova vela confirmada de '+asset+' / '+tf+'.');
  }catch(e){if(jobEpoch!==epoch||asset!==selectedAsset||forceDemo)return;
   const msg=e.message||'Falha ao receber candles';
-  if(prior){snapshots.set(key,{...prior,error:msg,lastAttempt:Date.now()});if(tf===selectedTF)activateSnapshot();else renderOverview()}
+  if(prior){snapshots.set(key,{...prior,providerStale:true,error:msg,lastAttempt:Date.now()});if(tf===selectedTF)activateSnapshot();else renderOverview()}
   else{snapshots.set(key,{mode:'empty',asset,tf,closedAt:0,lastAttempt:Date.now(),error:msg});if(tf===selectedTF)clearActive(msg);else renderOverview()}
   if(manual&&tf===selectedTF)toast(msg);
  }finally{if(requests.get(key)?.controller===controller)requests.delete(key);$('refreshBtn').disabled=false;}}
@@ -3299,8 +3302,9 @@ function quality(bars,tf,metadata={}){
  if(gaps)flags.push('Lacunas entre as últimas velas');
  if(bars.length<45)flags.push('Amostra abaixo de 45 candles para todos os indicadores');
  const recentClose=bars.at(-1)?.close,previous=bars.at(-2)?.close;
- if(number(recentClose)&&number(previous)&&Math.abs(recentClose/previous-1)>.14)flags.push('Variação extrema a revisar');
- const fresh=valid&&!stale&&closedAt<=now&&metadata.mode!=='demo'&&!metadata.providerStale;
+ const extreme=number(recentClose)&&number(previous)&&previous>0&&Math.abs(recentClose/previous-1)>.14;
+  if(extreme)flags.push('Variação extrema a revisar');
+ const fresh=valid&&!stale&&closedAt<=now&&metadata.mode!=='demo'&&!metadata.providerStale&&!gaps&&bars.length>=45&&!extreme;
  return {valid,fresh,closedAt,ageMs:now-closedAt,gaps,flags,level:!valid||!fresh?'bad':gaps||bars.length<45?'warn':'good'};
 }
 function detectTraps(bars,atrVal){
@@ -3895,7 +3899,7 @@ function ema(candles,period){const out=[];let e=0;const alpha=2/(period+1);
 function contextForOHLC(asset,tf,candles){const e9=ema(candles,9),e21=ema(candles,21);
  const snapshots=new Map();for(const period of Object.keys(FRAMES)){
    const cached=dataStore.get(asset+'|'+period);
-   if(cached?.analysis&&cached.candles?.length)snapshots.set(asset+'|'+period,{asset,tf:period,analysis:cached.analysis,candles:cached.candles,
+   if(cached?.analysis&&cached.candles?.length&&cached.closedAt>0&&cached.closedAt<=candles.at(-1).t+FRAMES[tf])snapshots.set(asset+'|'+period,{asset,tf:period,analysis:cached.analysis,candles:cached.candles,
     mode:'live',closedAt:cached.closedAt,providerStale:cached.providerStale});
  }
  const aa=window.SGEngine?.atr?.(candles)||candles.map(x=>x.high-x.low);
@@ -3910,12 +3914,12 @@ function createContext(asset,tf,bar){const engine=window.Vortex83Turbo;
  const snapshots={};
  for(const period of Object.keys(FRAMES)){
   const x=dataStore.get(asset+'|'+period);
-  snapshots[period]=x?{asset,tf:period,mode:'live',candles:x.candles,closedAt:x.closedAt,
+  snapshots[period]=x&&x.closedAt>0&&x.closedAt<=bar.closedAt?{asset,tf:period,mode:'live',candles:x.candles,closedAt:x.closedAt,
     analysis:x.analysis,providerStale:x.providerStale,source:x.source}:null;
  }
  // Notícias/calendário são compartilhados somente como contexto informativo.
  // Se não foram realmente confirmados, o próprio Turbo bloqueia a operação.
- const rootState=origin?.state||{};
+ const rootState=origin?.asset===asset?(origin.state||{}):{};
  const data={asset,tf,snapshots,lagging:bar.providerStale,
   settings:{lot:LOTS[asset],multiplier:CONTRACT[asset],spread:0,slippage:0,commission:0},
   state:{mode:'live',candles:bar.candles,analysis:bar.analysis,closedAt:bar.closedAt,
@@ -3926,10 +3930,8 @@ function createContext(asset,tf,bar){const engine=window.Vortex83Turbo;
 }
 function computeForCopy(asset,tf,bar){
  const remoteCtx=createContext(asset,tf,bar);
- const base=window.Vortex83Turbo?.current?.();
- const useExact=base?.data?.asset===asset&&base?.data?.tf===tf&&base?.plan?.closedAt===bar.closedAt&&
-   base?.data?.state?.mode==='live'&&!base?.data?.state?.providerStale;
- const ctx=useExact?base:remoteCtx;
+ // Contexto próprio e causal por ativo/timeframe; nunca ler snapshots posteriores.
+ const ctx=remoteCtx;
  if(!ctx?.data||!ctx.plan)return {ready:false,reason:'Motor Turbo ainda indisponível'};
  const engine=window.Vortex91Core;
  if(!engine?.analyze)return {ready:false,reason:'Motor Turbo 9.4 não inicializado'};
@@ -3953,7 +3955,7 @@ function computeForCopy(asset,tf,bar){
 }
 function settleOne(r,bars){if(r.status!=='pending'||!Array.isArray(bars)||!bars.length)return r;
  const idx=bars.findIndex(b=>b.t===r.t),ms=FRAMES[r.tf];
- if(idx<0)return r; // sem candle do sinal: não criar desfecho por aproximação
+ if(idx<0)return bars[0].t>r.t?{...r,status:'incompleto',reason:'Candle de origem saiu do histórico público; desfecho não verificável',closedAtResult:bars[0].t}:r;
  let seen=0,prevT=r.t;
  for(let i=idx+1;i<bars.length&&seen<6;i++){
   const b=bars[i];
@@ -4011,7 +4013,7 @@ async function pull(asset,tf,force){const id=asset+'|'+tf,prior=dataStore.get(id
   const response=adapter===window.SGV931H1Recovery?
     await adapter.load(asset,tf,undefined,window.SGV78Data):await adapter.load(asset,tf);
   const candles=response?.candles;
-  if(!Array.isArray(candles)||candles.length<45||!candles.every(b=>ok(b.t)&&ok(b.open)&&ok(b.high)&&ok(b.low)&&ok(b.close)))
+  if(!Array.isArray(candles)||candles.length<45||!candles.every(b=>ok(b.t)&&b.t>0&&b.t%FRAMES[tf]===0&&ok(b.open)&&b.open>0&&ok(b.high)&&ok(b.low)&&b.low>0&&ok(b.close)&&b.close>0&&b.high>=b.low&&b.high>=Math.max(b.open,b.close)&&b.low<=Math.min(b.open,b.close)))
     throw Error('OHLC insuficiente/inválido');
   const closedAt=candles.at(-1).t+FRAMES[tf];
   if(closedAt>Date.now()+1500)throw Error('Vela ainda não fechada');
@@ -4282,7 +4284,7 @@ function paint(){if(!$('stormCopyTrade'))return;
 }
 function drawAll(){if(renderFrame)return;renderFrame=requestAnimationFrame(()=>{renderFrame=0;drawTurbo();if(open)drawCopy()})}
 function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','timeframe','direcao','score_turbo','score_original','lote','entrada','stop','tp1','status','Pnl_USD','R','origem'];
- const quote=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+ const quote=x=>{const v=String(x??'');return '"'+(/^[=+\-@\t\r]/.test(v)?"'"+v:v).replace(/"/g,'""')+'"'};
  const txt='\ufeff'+[cols.join(';'),...rows.map(r=>[new Date(r.closedAt).toISOString(),r.asset,r.tf,r.side,r.score,r.classicScore??'',r.lot,r.entry,r.stop,r.tp,r.status,r.pnlUsd??'',r.R??'',r.origin].map(quote).join(';'))].join('\r\n');
  const link=document.createElement('a'),url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
  link.href=url;link.download='STORM_CODEX_v9_6_COPY_TRADE_'+new Date().toISOString().slice(0,10)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
