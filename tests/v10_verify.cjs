@@ -18,7 +18,7 @@ assert(app.includes('const LIMIT_USD=4,LOOKBACK=40;'));
 assert(app.includes('Number.isFinite(potential)&&potential>=LIMIT_USD'));
 assert(app.includes("side:gold&&!goldOk?'wait':side"));
 assert(app.includes('goldFourOK&&quality?.fresh'));
-assert.equal(api.VERSION,'10.1-dual-engine');
+assert.equal(api.VERSION,'10.2-dual-engine');
 assert.equal(typeof api.technicalConfluence,'function');
 assert(app.includes("COPY_TURBO_THRESHOLD_EXCLUSIVE=83"));
 assert(app.includes('turboScore>COPY_TURBO_THRESHOLD_EXCLUSIVE'));
