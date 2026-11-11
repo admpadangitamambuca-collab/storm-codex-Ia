@@ -4690,7 +4690,7 @@ function observe(asset,tf,bar){const id=asset+'|'+tf;
  if(bar.closedAt<=last)return false;
  // Uma tentativa com OHLC atrasado não deve consumir o fechamento antes de ele ser válido.
  const ms=FRAMES[tf];
- if(bar.closedAt>Date.now()||Date.now()-bar.closedAt>Math.min(ms+90000,390000)){
+ if(bar.closedAt>Date.now()||Date.now()-bar.closedAt>ms+90000){
   bar.lastEvaluation={ready:false,reason:'Fechamento fora da janela prospectiva de observação'};
   armedAt.set(id,bar.closedAt);return false;
  }
