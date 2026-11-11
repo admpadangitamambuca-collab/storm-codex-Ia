@@ -41,3 +41,7 @@ Sem nova API, serviço pago, backend obrigatório, alteração de fontes, envio 
 
 ## Validação
 `node tests/v10_dual.test.cjs` e GitHub Actions (quando disponibilizado). A sintaxe dos scripts pode ser validada offline; a experiência visual e o feed ao vivo requerem teste no navegador. Não alegar taxa de acerto melhorada sem amostras prospectivas.
+
+## v10.2 — Auditoria de viabilidade do Turbo (11/11/2026)
+
+Nova camada no motor Turbo para identificar entradas esticadas (EMA21 + impulso), pavios de rejeição e pivôs recorrentes antes do TP1. A auditoria reduz score ou bloqueia cenários estruturalmente frágeis, exibindo o motivo no painel, sem copiar a implementação proprietária da VTX. Clássico e Copy preservados; regra XAUUSD ≥US$4 e Copy fictício >83 mantidas; MT5 fora. Consulte `versoes/v10.2/README_V10_2.md`.
