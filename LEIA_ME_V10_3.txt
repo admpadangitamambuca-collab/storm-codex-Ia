@@ -1,0 +1,18 @@
+STORM CÓDEX IA 10.3 — CONSOLIDADA • 11/11/2026
+
+PUBLICAÇÃO NETLIFY
+1. Extraia o ZIP e envie os arquivos index.html e sw.js à raiz do site pelo Netlify Drop.
+2. Mantenha o celular ou computador com internet para consultar as fontes públicas.
+3. Os sinais aparecem somente com velas fechadas; falhas das fontes não devem ser ignoradas.
+
+INCLUSÕES
+• v10.0, v10.1 e v10.2 (motor duplo, confluência e viabilidade da entrada).
+• Auditoria de integridade de OHLC, causalidade e simulação Copy Trade.
+• Precision Adaptive 10.0 integrado ao arquivo index.html.
+• Métodos técnicos públicos complementares do Turbo (RSI, MACD, Bollinger, Wyckoff, harmônicos, VWAP condicionado a volume).
+• Turbo Focus: análise objetiva, informação seletiva e diagnósticos minimizáveis, score em % do timeframe escolhido e histórico de acerto observado a partir de 30 operações encerradas.
+• Copy Trade fictício segue score do Turbo estritamente maior que 83/100, sem ordem real.
+• Integração MT5 experimental NÃO mesclada à versão principal.
+
+OBSERVAÇÕES
+Score percentual representa confluência técnica, não probabilidade comprovada de lucro. Acerto observado é retrospectivo, sujeito a amostra e sem garantias. Sem teste em navegador real nem feed ao vivo nesta compilação.
