@@ -33,7 +33,7 @@ test('H1 só reconstrói com quatro M15 completos',()=>{
 test('MTF não usa um timeframe fechado depois do candle analisado',()=>{
  const src=part(17,'function planFor(','function detectAndSave(');
  const fn=new Function('data', 'const FRAMES={M1:60000,M5:300000,M15:900000,H1:3600000};const finite=Number.isFinite;const quote=()=>"USD";'+src+';return planFor(data,{},{danger:false});');
- const t=Date.now()-120000, data={asset:'EURUSD',tf:'M5',state:{mode:'live',closedAt:t,analysis:{side:'buy',price:1.1,atr:.001,stopDist:.002,targetDist:.003},candles:Array.from({length:45},()=>({close:1.1}))},snapshots:{M1:{mode:'live',candles:[{}],closedAt:t+60000,analysis:{side:'buy'}},M15:{mode:'live',candles:[{}],closedAt:t-900000,analysis:{side:'buy'}}}};
+ const t=Date.now()-120000, data={asset:'EURUSD',tf:'M5',state:{mode:'live',closedAt:t,analysis:{side:'buy',price:1.1,atr:.001,stopDist:.002,targetDist:.003},candles:Array.from({length:45},()=>({close:1.1}))},snapshots:{M1:{mode:'live',candles:[{}],closedAt:t+60000,analysis:{side:'buy'}},M15:{mode:'live',candles:[{}],closedAt:t-3600000,analysis:{side:'buy'}}}};
  const p=fn(data);
  assert.equal(p.mtf.find(x=>x.tf==='M1').fresh,false);
  assert.equal(p.mtf.find(x=>x.tf==='M15').fresh,false); // dado excessivamente antigo
