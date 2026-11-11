@@ -1,0 +1,23 @@
+name: Copy Trade smoke tests
+on:
+  push:
+    branches:
+      - main
+      - "fix/**"
+    paths:
+      - index.html
+      - tests/copy-trade-smoke.cjs
+      - .github/workflows/copy-trade-smoke.yml
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS and Copy Trade simulated operations
+        run: node tests/copy-trade-smoke.cjs
