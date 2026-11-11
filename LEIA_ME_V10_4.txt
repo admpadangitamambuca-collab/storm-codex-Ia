@@ -1,0 +1,12 @@
+STORM CÓDEX IA 10.4 — REFRESH DE ANÁLISE MANUAL (11/11/2026)
+
+Instalação: extraia o ZIP e publique os arquivos da raiz no Netlify (index.html, sw.js).
+Todas as melhorias v10.3 permanecem integradas.
+
+Refresh: cada clique calcula novamente os indicadores e todos os itens do score de confluência com a ÚLTIMA VELA FECHADA disponível, mesmo se o feed repetir a vela anterior. A atualização também consulta M1, M5, M15, H1, notícias, calendário e o spot de referência do ouro quando aplicável. Após as respostas, o motor selecionado é calculado novamente com o contexto atualizado. Um contador no painel Turbo identifica cada nova leitura.
+
+A mesma vela pode legitimamente manter o mesmo score: isso não significa que o botão deixou de executar a análise. A abertura de uma nova vela não é requisito para recalcular a leitura.
+
+Controles de segurança: a releitura de um mesmo candle não cria outra entrada nem um histórico fictício. Só dados OHLC fechados validam sinais. Quando fontes falham, a análise sinaliza dado atrasado, e não cria preços artificiais. O Copy Trade fictício conserva Turbo >83 e outros pré-requisitos técnicos de integridade.
+
+Testes: sintaxe validada dos 27 scripts inline, teste de duas atualizações sem nova vela com 4 timeframes por clique; publicação não foi testada em navegador com feeds reais, nem representa backtest estatístico.
