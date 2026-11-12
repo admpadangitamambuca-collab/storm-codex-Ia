@@ -1,3 +1,18 @@
+# Storm Códex IA v10.8 — Aprendizado por resultados prospectivos (12/11/2026)
+
+- Os três motores **Clássico, Índices (Nasdaq-100 e S&P 500) e Turbo** passam a avaliar um histórico local isolado por motor, ativo e timeframe. Um resultado não contamina outro.
+- Novos parâmetros OHLC: EMA 9/21 normalizadas pelo ATR, RSI 14 informativo, eficiência direcional, posição de fechamento no candle, expansão/contração de ATR, rompimento de faixa, regime lateral/tendência e sessão UTC.
+- Registra somente **novos sinais observados** no navegador, com confluência **estritamente maior que 78/100**, direção e plano de entrada/stop/alvo válidos e dados OHLC recentes, evitando duplicatas em Refresh e histórico retroativo.
+- Verifica até seis velas futuras, sem lacunas e sem inventar ordem dos preços. TP e SL atingidos na mesma vela são **ambíguos** e não entram na amostra. Expirados e dados insuficientes também não contam como vitórias/derrotas.
+- Ajustes técnicos são pequenos (até ±3 pontos); ajustes por resultados são limitados (−4 a +3), ativados somente após **40 operações resolvidas**, com divisão temporal 70/30 e amostras mínimas de treino/validação. Resultados futuros não são usados para calcular o sinal já emitido.
+- A análise de Índices continua separada; **Copy Trade fictício segue exclusivo do Turbo com score >83/100** e lotes anteriores. O índice técnico /100 **não é probabilidade estatisticamente calibrada**.
+- Nova seção recolhível de diagnóstico de aprendizado. O aprendizado é salvo em localStorage apenas neste navegador; sem execução em corretora, sem treinamento em servidor e sem aprendizado enquanto a aba estiver fechada. Testes de regressão usam OHLC sintético; exigem validação com feed real antes de atribuir eficácia.
+
+## Publicação manual Netlify
+O ZIP v10.8 contém `index.html`, `sw.js`, `learning-v108.js` e `LEIA_ME.txt` na raiz. Todos devem ser publicados juntos; arrastar o ZIP inteiro no Netlify Drop.
+
+---
+
 # Storm Códex IA v10.6 — monitor Copy Trade com log de leituras (12/11/2026)
 
 - Registra no navegador as **leituras técnicas** por ativo/timeframe/vela fechada, inclusive quando nenhuma operação é autorizada. Exibe contagem de leituras, notas acima de 83/100, elegíveis e horário da última leitura.

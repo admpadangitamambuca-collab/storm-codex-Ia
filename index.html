@@ -2593,6 +2593,18 @@ function computeSnapshot(candles,mode,extra={}){
  if(mode==='live'&&!legacyAnalysis.preliminary&&['buy','sell'].includes(legacyAnalysis.side)){const adap=V71().relearn(getHistory(extra.asset,tf),{asset:extra.asset,tf,side:legacyAnalysis.side,regime:legacyAnalysis.regime,closedAt:candles.at(-1).t+TF[tf],rawScore:legacyAnalysis.score});legacyAnalysis={...legacyAnalysis,score:adap.score,adaptive:adap};}
  // Os dois motores têm saídas independentes. Turbo e histórico legado continuam vendo somente legacyAnalysis.
  let analysis=window.SGClassicPrecision93?.enhance(legacyAnalysis,candles,candles.length-1,{...context,providerStale:extra.providerStale,futures:extra.futures},{snapshots,learning:true})||legacyAnalysis;
+ // v10.8: Clássico e Índices aprendem separadamente; só ajustes seguros em sinal operacional.
+ const adaptive108=window.StormOutcomeLearning108?.assess?.(
+  ['NASDAQ','SP500'].includes(extra.asset||selectedAsset)?'indices':'classic',
+  {asset:extra.asset||selectedAsset,tf,candles,mode,providerStale:extra.providerStale,
+   side:analysis.side,baseScore:analysis.score,entry:analysis.price,
+   stop:Number(analysis.price)- (analysis.side==='buy'?1:-1)*Number(analysis.stopDist),
+   tp:Number(analysis.price)+ (analysis.side==='buy'?1:-1)*Number(analysis.targetDist),
+   trackAllowed:analysis.quality!=='EVITAR'&&analysis.v93?.operational===true}
+ );
+ if(adaptive108)analysis={...analysis,
+  score:analysis.v93?.operational?Math.min(95,adaptive108.score):analysis.score,
+  learning108:adaptive108};
  const stats=backtest(candles,context,tf,mode==='live'?v6Settings.spread:0);
  const observed=mode==='live'?V72().observedCalibration(getHistory(extra.asset,tf),{asset:extra.asset,tf,side:legacyAnalysis.side,regime:legacyAnalysis.regime,score:legacyAnalysis.score,atClose:candles.at(-1).t+TF[tf]}):{available:false};
  const probability=observed.available?{...observed,sourceType:'observed'}:{...V72().historicalEstimate(stats,legacyAnalysis.side,legacyAnalysis.score),sourceType:'backtest'};
@@ -4251,7 +4263,13 @@ function analyze(data,ctx,records=[]){
  const advancedShift=advanced?.ready?advanced.delta:0;
  const specialized=window.StormAssetSpecialist105?.inspect(asset,tf,c,plan.side)||null;
  const specializedShift=specialized?.ready?specialized.shift:0;
- const score=clamp(baseScore+learned.adjustment+advancedShift+specializedShift,0,100);
+ const preLearningScore=clamp(baseScore+learned.adjustment+advancedShift+specializedShift,0,100);
+ const adaptive108=window.StormOutcomeLearning108?.assess?.('turbo',{
+  asset,tf,candles:c,mode:data.state?.mode,providerStale:data.state?.providerStale,
+  side:plan.side,baseScore:preLearningScore,entry:plan.entry,stop:plan.stop,tp:plan.targets?.[0],
+  trackAllowed:qualityCheck.valid&&!qualityCheck.gaps&&qualityCheck.fresh&&plan.hasLevels
+ });
+ const score=adaptive108?.score??preLearningScore;
  const brakes=[...(plan.blocked||[])];
  if(!antiTrap)brakes.push('Detector reconheceu possível armadilha CONTRA o sinal.');
  if(!qualityCheck.fresh)brakes.push('Fonte de velas fechadas não está atualizada.');
@@ -4282,7 +4300,7 @@ function analyze(data,ctx,records=[]){
  ];
  if(specialized?.ready)narrative.push('Camada '+asset+': '+specialized.observations.join(' · ')+' · '+specializedShift+' pontos.');
  if(evolution?.messages?.length)narrative.push('Evolução v10: '+evolution.messages.join(' · '));
-  const base={asset,tf,qualityCheck,crossSource,atrVal,regime,trap,fvgs,pattern,fib,components,score,baseScore,learned,advanced,advancedShift,specialized,specializedShift,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned,evolution};
+  const base={asset,tf,qualityCheck,crossSource,atrVal,regime,trap,fvgs,pattern,fib,components,score,baseScore,learned,learning108:adaptive108,advanced,advancedShift,specialized,specializedShift,brakes,ready:initialReady,strategy,narrative,nearZone,nearFvg,trendAligned,evolution};
  const selection=selectiveGate(data,ctx,base);
  const adaptive=window.StormAdaptive?.evaluate({engine:'turbo',candles:c,asset,tf,side:plan.side,mode:data.state?.mode,score,atClose:plan.closedAt,
   setup:selection.trigger.kind,rr:plan.estimatedNetRR,mtf:plan.mtf,history:records,macro:ctx.macro})||{ready:true,brakes:[]};
@@ -5678,4 +5696,5 @@ function init(){
 if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
+<script src="learning-v108.js"></script>
 </body></html>
