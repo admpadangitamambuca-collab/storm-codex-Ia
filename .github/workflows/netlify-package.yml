@@ -25,27 +25,27 @@ jobs:
           mkdir -p dist/netlify
           cp index.html sw.js dist/netlify/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
-          STORM CODEX IA v10.5 — COPY TRADE + EURUSD/XAUUSD
+          STORM CODEX IA v10.6 — COPY TRADE + EURUSD/XAUUSD
           Conteudo completo para Netlify: index.html e sw.js na raiz.
           Publicar: arraste este ZIP no Netlify Drop ou extraia os arquivos.
-          O monitor ficticio inicia ao abrir o aplicativo.
+          O monitor ficticio inicia ao abrir o aplicativo e registra as leituras de 16 pares enquanto aberto.
           Operacoes: apenas novas velas fechadas, com Turbo > 83/100 e OHLC/stop/alvo validos.
           Os dados de mercado publicos podem atrasar; sem execucao em corretora.
-          Nao garante lucratividade. Historico salvo localmente no navegador.
+          Nao funciona com a aba fechada. Nao garante lucratividade. Historico salvo localmente no navegador.
           EOF
-          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_5_COPY_TRADE_NETLIFY.zip index.html sw.js LEIA_ME.txt)
-          unzip -l dist/Storm_Codex_IA_v10_5_COPY_TRADE_NETLIFY.zip
+          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_6_COPY_TRADE_NETLIFY.zip index.html sw.js LEIA_ME.txt)
+          unzip -l dist/Storm_Codex_IA_v10_6_COPY_TRADE_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v10_5_COPY_TRADE_NETLIFY
-          path: dist/Storm_Codex_IA_v10_5_COPY_TRADE_NETLIFY.zip
+          name: Storm_Codex_IA_v10_6_COPY_TRADE_NETLIFY
+          path: dist/Storm_Codex_IA_v10_6_COPY_TRADE_NETLIFY.zip
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v10_5_COPY_TRADE_NETLIFY.zip
-          if gh release view v10.5 >/dev/null 2>&1; then
-            gh release upload v10.5 "$FILE" --clobber
+          FILE=dist/Storm_Codex_IA_v10_6_COPY_TRADE_NETLIFY.zip
+          if gh release view v10.6 >/dev/null 2>&1; then
+            gh release upload v10.6 "$FILE" --clobber
           else
-            gh release create v10.5 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.3.1 - Copy Trade corrigido" --notes "Pacote completo para Netlify. Monitor automatico e simulacao Turbo >83. Testes automatizados passaram. Sem operacoes reais."
+            gh release create v10.6 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.6 - Copy Trade monitor e leituras" --notes "Pacote completo para Netlify. Monitor automatico e simulacao Turbo >83. Testes automatizados passaram. Sem operacoes reais."
           fi
