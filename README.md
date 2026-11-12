@@ -1,3 +1,32 @@
+# Storm Códex IA v11.2 — Nasdaq Yahoo ^NDX + Precision Clássico/Turbo (12/11/2026)
+
+## Nova fonte exclusiva do Nasdaq-100
+- O símbolo **NASDAQ** do app deixa de usar Biquote e passa a consultar o **Nasdaq-100 Index `^NDX`** (Yahoo Finance Chart v8; fonte pública não oficial, gratuita, sem chave e sem login).
+- No Netlify com integração Git, a chamada passa pela função serverless `/.netlify/functions/nasdaq-ohlc?tf=M5`, que responde OHLC fechado com identidade `^NDX` e timeframes M1/M5/M15/H1. Hospedagem Netlify pode exigir uso dentro das cotas do plano; o provedor pode limitar/alterar a API.
+- Quando o deploy for um **ZIP puramente estático**, sem função Netlify publicada, o app tenta em seguida o **proxy público gratuito cors.dev** para a mesma rota Yahoo `^NDX`, sem enviar credenciais. Esse proxy de terceiros **não oferece garantia de disponibilidade, rapidez ou privacidade de metadados de acesso**. O caminho recomendado é publicar o repositório via conexão Git no Netlify, com funções ativadas.
+- Não substitui `^NDX` por CFD NAS100, índice Nasdaq Composite, futuros `NQ=F`, ETF QQQ, dados sintéticos nem candles abertos. Se o Yahoo responder errado ou estiver bloqueado, mostra o diagnóstico e evita sinal falsamente atualizado.
+- **O dado do índice pode ter atraso de 15 minutos ou mais.** Com OHLC defasado, o painel mostra histórico/diagnóstico, mas não libera sinal seletivo de execução. `^NDX` não representa o preço exato de um CFD NAS100 da corretora.
+- Apenas **NASDAQ** mudou de fonte. **XAUUSD, Forex, BTCUSD e S&P500** continuam com Biquote; BTCUSDT usa Binance Spot; WIN/WDO continuam com a consulta B3/Biquote.
+
+## Motor Clássico — qualidade v11.2
+- Complemento causal de **EMA 9/21/50**, eficiência direcional (20 velas), Choppiness 14, ATR14 relativo ao regime, RSI14, histograma MACD, força de fechamento, rompimento confirmado e varredura/liquidez.
+- Ajuste limitado do score técnico **-6 a +4 pontos** e vetos de volatilidade anômala, entrada esticada e varredura contrária. Não muda o histórico, nem inventa candles ou confiança estatística.
+- **XAUUSD Clássico mantém obrigatoriamente a projeção mínima de US$4 em UMA vela para COMPRA/VENDA**. Quando o gate falha, permanece em AGUARDAR; o novo complemento não pode reverter esse bloqueio.
+
+## Motor Turbo — plano XAU independente, inclusive abaixo de US$4
+- A análise Turbo **não herda mais automaticamente o gate de US$4 do Clássico**. Recebe um snapshot das métricas de base pré-gate, sem alterar o retorno do Clássico.
+- O Turbo estima **TP1 e Stop por ATR14/estrutura do próprio timeframe**, com confluência EMA, momentum, regime, varreduras, Choppiness, volatilidade e checagens adicionais. O TP1 pode ser **US$1–US$3**, por exemplo, se existir estrutura válida e proporção risco/retorno suficiente.
+- A interface mostra o alvo do Turbo e explica quando é menor que US$4, junto com confluência/100, entrada e stop. Não significa que qualquer leitura será aprovada: OHLC atrasado, risco excessivo, macro não verificada, gatilho ausente e MTF contrário continuam bloqueando.
+- O Turbo continua com seu cálculo próprio, filtros seletivos, ajustes por ativo, memória adaptativa e histórico; sua memória aprende apenas resultados futuros observados em velas válidas.
+- **Copy Trade permanece fictício e somente usa aprovações do Turbo com confluência estritamente acima de 83/100.** Lotes anteriores preservados. Sem ordens reais.
+
+## Testes e publicação
+- Testes de sintaxe nos **29 scripts inline** e módulos externos; arquivo `tests/v112-smoke.test.js` executável com `node --test tests/v112-smoke.test.js` (Node 18+).
+- Os testes unitários usam **candles sintéticos para validar a lógica**, sem simular acurácia financeira. A conectividade real, limites e atraso de `^NDX` no Netlify ainda exigem validação com o site publicado.
+- Para publicar a versão integral: use a **raiz completa do repositório** e preserve `index.html`, `storm-nasdaq-v112.js`, `storm-precision-v112.js`, `netlify/functions/nasdaq-ohlc.js`, `learning-v108.js`, `b3-indices-v111.js` e `sw.js`.
+
+---
+
 # Storm Códex IA v11.1 — WIN e WDO integrados ao modo Índices (12/11/2026)
 
 ## Motor brasileiro de minicontratos
