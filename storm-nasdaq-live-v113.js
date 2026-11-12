@@ -11,7 +11,7 @@
  const PERIOD=Object.freeze({M1:'1m',M5:'5m',M15:'15m',H1:'1h'});
  const BASE='https://biquote.io',QUOTE_AGE_MAX=16_000;
  let lastTick=null,tickCachedAt=0,tickPromise=null,connection=null,streamStarting=null,clientPromise=null,
-  pulseTimer=null,streamStatus='desconectado',lastPollAt=0,reading=false;
+  pulseTimer=null,streamStatus='desconectado',lastPollAt=0,lastStreamAttempt=0,reading=false;
  const finite=v=>typeof v==='number'&&Number.isFinite(v);
  function ts(raw){
   if(finite(raw))return raw<1e11?raw*1000:raw;
@@ -36,19 +36,21 @@
    const rawTime=row.t??row.time??row.openTime??row.timestamp;
    const b={t:ts(rawTime),open:Number(row.open??row.o),
     high:Number(row.high??row.h),low:Number(row.low??row.l),close:Number(row.close??row.c),
-    volume:row.volume==null?null:Number(row.volume)};
+    volume:Number(row.volume)>0?Number(row.volume):Number(row.tickVolume)>0?Number(row.tickVolume):null,
+    tickVolume:Number(row.tickVolume)||0};
    if(!validCandle(b)||b.t+ms>now-350||b.t%ms!==0)continue;
    candles.set(b.t,b);
   }
   return [...candles.values()].sort((a,b)=>a.t-b.t).slice(-500);
  }
  function age(t,now=Date.now()){return finite(t)?Math.max(0,now-t):Infinity}
- function validateTick(v,now=Date.now()){
+ function validateTick(v,now=Date.now(),origin='rest'){
   if(!v||String(v.symbol||v.name||'').toUpperCase()!==SYMBOL)throw Error('Tick não corresponde a USTEC');
   const mid=Number(v.mid),bid=Number(v.bid),ask=Number(v.ask);
   if(![mid,bid,ask].every(finite)||mid<10000||mid>100000||bid>mid||mid>ask||bid<=0)throw Error('USTEC bid/ask inválidos');
   const market=String(v.marketState||'').toLowerCase();
-  if(market!=='open')throw Error('Mercado USTEC não está aberto ('+(market||'sem estado')+')');
+  if(market!=='open'&&(origin!=='stream'||(market&&market!=='unknown')))
+   throw Error('Mercado USTEC não está aberto ('+(market||'sem estado')+')');
   const quoteAge=Number.isFinite(Number(v.quoteAgeSeconds))&&v.quoteAgeSeconds!==null?
    Math.max(0,Number(v.quoteAgeSeconds)*1000):age(ts(v.lastQuoteAt??v.time??v.timestamp),now);
   if(v.stale===true||!finite(quoteAge)||quoteAge>QUOTE_AGE_MAX)
@@ -160,7 +162,7 @@
  async function connectStream(){
   if(!isSelected()||root.document?.hidden)return;
   if(connection||streamStarting)return streamStarting;
-  streamStarting=(async()=>{
+  lastStreamAttempt=Date.now();streamStarting=(async()=>{
    try{
     const signalR=await loadSignalR();
     if(!isSelected())return;
@@ -170,7 +172,7 @@
     c.on('ReceiveTick',v=>{
      if(!isSelected())return;
      try{
-      const tick=validateTick(v);tick.streamed=true;emit(tick);streamStatus='streaming';
+      const tick=validateTick(v,Date.now(),'stream');tick.streamed=true;emit(tick);streamStatus='streaming';
       tickBadge();
      }catch(e){/* outros símbolos, sessão encerrada ou formato errado: ignorar */}
     });
@@ -192,7 +194,7 @@
  async function pulse(){
   tickBadge();
   if(!isSelected()||root.document?.hidden){if(connection)disconnect();return}
-  if(!connection&&!streamStarting)connectStream().catch(()=>{});
+  if(!connection&&!streamStarting&&Date.now()-lastStreamAttempt>=45000)connectStream().catch(()=>{});
   const tick=getLiveTick(),now=Date.now();
   // Contingência de baixo volume: REST apenas se SignalR cair/não entregar ticks.
   if(!tick&&now-lastPollAt>=15000&&!reading){
