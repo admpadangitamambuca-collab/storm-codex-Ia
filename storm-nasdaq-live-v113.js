@@ -193,6 +193,7 @@
  }
  async function pulse(){
   tickBadge();
+  if(root.dispatchEvent&&root.Event)root.dispatchEvent(new root.Event('storm-nasdaq-pulse'));
   if(!isSelected()||root.document?.hidden){if(connection)disconnect();return}
   if(!connection&&!streamStarting&&Date.now()-lastStreamAttempt>=45000)connectStream().catch(()=>{});
   const tick=getLiveTick(),now=Date.now();
