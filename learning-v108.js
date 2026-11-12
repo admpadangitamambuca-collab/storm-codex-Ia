@@ -13,8 +13,9 @@
  'use strict';
  const TF=Object.freeze({M1:60000,M5:300000,M15:900000,H1:3600000});
  const ENGINES=['classic','indices','turbo'];
+ const ASSETS=Object.freeze(['XAUUSD','BTCUSD','BTCUSDT','EURUSD','USDJPY','USDCAD','USDCHF','AUDUSD','NASDAQ','SP500']);
  const THRESHOLD=78,HORIZON=6,MAX_ROWS=700,KEY_PREFIX='storm_v108_outcome_';
- const armed=new Map(),lastModels=new Map();
+ const armed=new Map(),lastModels=new Map(),reconcileCursor={next:0,last:0,busy:false,completed:0,error:''};
  let storageError='',renderQueued=false,importMessage='';
  const finite=x=>typeof x==='number'&&Number.isFinite(x);
  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -293,6 +294,77 @@
   }
   renderSoon();return added;
  }
+
+ // Reconciliador: acompanha a liquidação de cada sinal REAL já capturado,
+ // mesmo quando outra aba ou ativo está selecionado.
+ // Não registra sinais retroativos nem reinterpreta ordens inexistentes.
+ async function reconcilePending(batchSize=6){
+  if(reconcileCursor.busy||root.document?.hidden)return {busy:true};
+  const feed=root.SGV78Data;
+  if(!feed?.load)return {error:'Feed OHLC indisponível'};
+  const open=allEntries().filter(set=>ASSETS.includes(set.asset)&&
+   set.rows.some(r=>r.status==='pending'));
+  if(!open.length)return {checked:0,pending:0};
+  const max=Math.min(8,Math.max(1,Math.floor(Number(batchSize)||6)));
+  const groups=Array.from({length:Math.min(max,open.length)},(_,i)=>
+   open[(reconcileCursor.next+i)%open.length]);
+  reconcileCursor.next=(reconcileCursor.next+groups.length)%open.length;
+  reconcileCursor.busy=true;
+  let checked=0,resolved=0,errors=[];
+  // Uma consulta por ativo/período; resultados separados por motor.
+  const unique=[...new Map(groups.map(g=>[g.asset+'|'+g.tf,{asset:g.asset,tf:g.tf}])).values()];
+  try{
+   await Promise.all(unique.map(async ({asset,tf})=>{
+    try{
+     const data=asset==='XAUUSD'&&tf==='H1'&&root.SGV931H1Recovery?.load
+       ?await root.SGV931H1Recovery.load(asset,tf,null,feed)
+       :await feed.load(asset,tf,null);
+     if(data?.mode!=='live'||!Array.isArray(data.candles)||data.candles.length<2)return;
+     checked++;
+     // Settlement usa somente barras reais fechadas validadas pela fonte.
+     for(const engine of ENGINES){
+      const rows=rowsOf(engine,asset,tf);
+      if(!rows.some(r=>r.status==='pending'))continue;
+      const previous=rows.filter(r=>r.status==='pending').length;
+      if(settle(rows,data.candles,tf)){
+       const remaining=rows.filter(r=>r.status==='pending').length;
+       resolved+=Math.max(0,previous-remaining);
+       save(engine,asset,tf,rows);
+      }
+     }
+    }catch(e){errors.push(asset+'/'+tf+': '+String(e?.message||e).slice(0,100));}
+   }));
+  }finally{
+   reconcileCursor.busy=false;reconcileCursor.last=Date.now();
+   reconcileCursor.completed+=resolved;reconcileCursor.error=errors.slice(0,2).join(' | ');
+   if(resolved)renderSoon();
+  }
+  return {checked,resolved,errors,pending:open.length};
+ }
+ function summaryAll(){
+  return ASSETS.map(asset=>{
+   const rows=ENGINES.flatMap(engine=>Object.keys(TF).flatMap(tf=>rowsOf(engine,asset,tf)));
+   const solved=rows.filter(r=>['win','loss'].includes(r.status));
+   const indep=ENGINES.reduce((total,engine)=>
+    total+Object.keys(TF).reduce((sum,tf)=>
+     sum+decorrelate(rowsOf(engine,asset,tf).filter(r=>['win','loss'].includes(r.status)),tf).length,0),0);
+   return {asset,observations:rows.length,completed:solved.length,independent:indep,
+     wins:solved.filter(r=>r.status==='win').length,
+     losses:solved.filter(r=>r.status==='loss').length,
+     pending:rows.filter(r=>r.status==='pending').length};
+  });
+ }
+ function startReconciler(){
+  if(!root.document||!root.setInterval||startReconciler.started)return;
+  startReconciler.started=true;
+  // Backoff implícito: seis conjuntos por ciclo de 95 segundos, sem corrida paralela.
+  root.setInterval(()=>{if(!root.document.hidden)reconcilePending().catch(()=>{})},95000);
+  root.document.addEventListener('visibilitychange',()=>{
+   if(!root.document.hidden)reconcilePending().catch(()=>{});
+  });
+  // Ao abrir a sessão, recuperar pendências capturadas em dias anteriores.
+  root.setTimeout?.(()=>reconcilePending().catch(()=>{}),15000);
+ }
  function renderSoon(){
   if(!root.document||renderQueued)return;
   renderQueued=true;
@@ -352,16 +424,40 @@
     '<div style="color:#8cacaa;font-size:11px;margin-top:4px">'+recent+'</div></div>';
   });
   area.innerHTML=lines.join('');
+  // Resumo permanente para todos os ativos, inclusive os que não estão na tela.
+  let matrix=doc.getElementById('stormMemoryAllAssets');
+  if(!matrix){
+   matrix=doc.createElement('details');matrix.id='stormMemoryAllAssets';
+   matrix.style.cssText='margin:13px 0 0;border:1px solid #41645f;border-radius:12px;padding:11px;background:#10282a';
+   const summary=doc.createElement('summary');summary.textContent='Memória dos 10 ativos · visão geral';summary.style.cssText='cursor:pointer;font-weight:800;color:#bcebd6';
+   const table=doc.createElement('div');table.id='stormMemoryAllTable';
+   table.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px;margin-top:12px';
+   matrix.append(summary,table);area.after(matrix);
+  }
+  const table=doc.getElementById('stormMemoryAllTable');
+  if(table){
+   table.textContent='';
+   for(const v of summaryAll()){
+    const div=doc.createElement('div');div.style.cssText='border:1px solid #365f52;border-radius:10px;padding:10px;color:#c6e7dc;font-size:11px;background:#12312d';
+    const h=doc.createElement('strong');h.textContent=v.asset;
+    const info=doc.createElement('div');info.style.cssText='margin-top:5px;color:#9db8ae';
+    info.textContent=v.completed+' resolvidos · '+v.pending+' pendentes · '+v.independent+' independentes';
+    div.append(h,info);table.append(div);
+   }
+  }
+
   const msg=doc.getElementById('stormMemoryMessage');
   if(msg)msg.textContent=(storageError?storageError+' ':'')+importMessage+
-   ' Armazenamento local neste navegador; backups podem ser transferidos manualmente. Resultados brutos em R, sem spread e comissão.';
+   ' Armazenamento local neste navegador; backups podem ser transferidos manualmente. Resultados brutos em R, sem spread e comissão. Reconciliação geral: '+(reconcileCursor.last?new Date(reconcileCursor.last).toLocaleTimeString('pt-BR'):'aguardando')+'. '+reconcileCursor.error;
  }
  if(root.document){
   root.document.addEventListener('change',renderSoon);
   if(root.document.readyState==='loading')
    root.document.addEventListener('DOMContentLoaded',renderSoon,{once:true});
   else renderSoon();
+  if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',startReconciler,{once:true});
+  else startReconciler();
  }
- return Object.freeze({version:'11.0',THRESHOLD,HORIZON,
-  features,settle,calibrate,decorrelate,assess,rowsOf,importObject,allEntries,exportBackup,render});
+ return Object.freeze({version:'11.0',THRESHOLD,HORIZON,ASSETS,
+  features,settle,calibrate,decorrelate,assess,rowsOf,importObject,allEntries,summaryAll,reconcilePending,exportBackup,render});
 });
