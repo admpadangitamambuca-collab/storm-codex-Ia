@@ -30,10 +30,19 @@ function parse(data,symbol){
 async function fetchQuote(symbol,fetcher=fetch){
  if(!CODE.test(symbol))throw Error('Código WIN/WDO inválido');
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8500);
- try{
-  const response=await fetcher(sourceUrl+encodeURIComponent(symbol),{signal:controller.signal,headers:{Accept:'application/json'}});
+ const read=async url=>{
+  const response=await fetcher(url,{signal:controller.signal,headers:{Accept:'application/json'}});
   if(!response.ok)throw Error('brapi HTTP '+response.status);
-  return parse(await response.json(),symbol);
+  return await response.json();
+ };
+ try{
+  let previous='';
+  try{return parse(await read(sourceUrl+encodeURIComponent(symbol)),symbol)}
+  catch(e){previous=String(e?.message||e)}
+  // Segunda rota documentada, mesma fonte e somente fechamento diário.
+  const curve=await read('https://brapi.dev/api/v2/futures/term-structure?asset='+symbol.slice(0,3));
+  try{return {...parse({quotes:curve?.contracts},symbol),source:'brapi.dev · curva de contratos · fim de pregão'}}
+  catch(e){throw Error('Cotação: '+previous+' / curva: '+String(e?.message||e))}
  }finally{clearTimeout(timeout)}
 }
 exports.parse=parse;exports.fetchQuote=fetchQuote;
