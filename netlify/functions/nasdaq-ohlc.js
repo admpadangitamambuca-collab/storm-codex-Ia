@@ -12,7 +12,7 @@ const RESP={"content-type":"application/json; charset=utf-8","cache-control":"pu
 const format=(status,data)=>({statusCode:status,headers:RESP,body:JSON.stringify(data)});
 const good=x=>typeof x==='number'&&Number.isFinite(x);
 const timestamp=v=>good(v)?(v<1e11?v*1000:v):NaN;
-let cache=new Map(), lastRequest=0;
+let cache=new Map();
 async function pull(tf,fetcher=fetch,now=Date.now()){
  const spec=FRAME[tf];if(!spec)throw new Error('Timeframe não suportado');
  const urls=['query1.finance.yahoo.com','query2.finance.yahoo.com'].map(domain=>
@@ -58,8 +58,8 @@ exports.handler=async event=>{
  if(!FRAME[tf])return format(400,{error:'Timeframe inválido: M1, M5, M15 ou H1'});
  const now=Date.now(),stored=cache.get(tf);
  if(stored&&now-stored.at<25000)return format(200,{...stored.data,cacheAgeMs:now-stored.at});
- if(now-lastRequest<1200&&!stored)return format(429,{error:'Respeite 1 segundo entre novas leituras do feed'});
- lastRequest=now;
+ // M1/M5/M15/H1 são requisitados simultaneamente na abertura da aba.
+ // Cache por timeframe evita repetição sem bloquear as outras três leituras.
  try{
   const data=await pull(tf);
   cache.set(tf,{at:now,data});
