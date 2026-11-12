@@ -32,6 +32,28 @@
    transport:'Netlify Function · Yahoo Chart',providerTimestamp:closedAt,fetchedAt:now,
    mode:'live',futures:false};
  }
+ const YAHOO={M1:{interval:'1m',range:'5d'},M5:{interval:'5m',range:'1mo'},
+  M15:{interval:'15m',range:'1mo'},H1:{interval:'60m',range:'3mo'}};
+ async function publicProxy(tf,signal){
+  // Alternativa de continuidade para um ZIP estático quando Netlify Functions
+  // não foi implantado. É um proxy TERCEIRIZADO e não fornece SLA.
+  const spec=YAHOO[tf],path='https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval='+
+   spec.interval+'&range='+spec.range+'&includePrePost=false';
+  const response=await root.fetch('https://proxy.cors.dev/'+path,{cache:'no-store',signal,credentials:'omit'});
+  if(!response.ok)throw Error('Proxy público ^NDX HTTP '+response.status);
+  const raw=await response.json(),res=raw?.chart?.result?.[0],meta=res?.meta||{};
+  if(String(meta.symbol||'').toUpperCase()!=='^NDX')throw Error('Proxy respondeu ativo diferente de ^NDX');
+  const quote=res?.indicators?.quote?.[0]||{},ms=SPEC[tf],now=Date.now();
+  const bars=(res?.timestamp||[]).map((seconds,i)=>{
+   const t=Number(seconds)*1000,open=quote.open?.[i],high=quote.high?.[i],low=quote.low?.[i],close=quote.close?.[i];
+   if([t,open,high,low,close].some(x=>!Number.isFinite(x))||open<=0||low<=0||
+      high<Math.max(open,close)||low>Math.min(open,close)||t+ms>now-400)return null;
+   return {t,open,high,low,close,volume:Number.isFinite(quote.volume?.[i])?quote.volume[i]:null};
+  }).filter(Boolean).slice(-500);
+  return validate({requestedAsset:'NASDAQ',requestedTf:tf,feedSymbol:'^NDX',
+   feedVerified:true,source:'Yahoo Finance · proxy público cors.dev',exchangeDelayedMinutes:Number(meta.exchangeDataDelayedBy)||0,
+   candles:bars},tf,now);
+ }
  async function load(tf,signal){
   if(!SPEC[tf])throw Error('Timeframe não suportado: '+tf);
   const ctl=new AbortController(),timeout=setTimeout(()=>ctl.abort(),12000);
@@ -40,10 +62,17 @@
   try{
    const response=await root.fetch(url+'?tf='+encodeURIComponent(tf),{signal:ctl.signal,cache:'no-store',headers:{Accept:'application/json'}});
    let data=null;try{data=await response.json()}catch{}
-   if(!response.ok)throw Error((data?.error||'Feed Yahoo ^NDX HTTP '+response.status)+'. Netlify Functions precisa estar implantado; um ZIP estático não executa funções.');
+   if(!response.ok)throw Error((data?.error||'Feed Yahoo ^NDX HTTP '+response.status)+'. Netlify Functions pode não estar implantado.');
    return validate(data,tf);
   }catch(err){if(ctl.signal.aborted&&signal?.aborted)throw err;
-   throw Error('Nasdaq-100: '+String(err?.message||err));
+   try{
+    const fallback=await publicProxy(tf,ctl.signal);
+    return {...fallback,source:'Yahoo Finance · via proxy público cors.dev',
+     transport:'cors.dev · Yahoo Chart v8',feedNote:'Proxy público de terceiros, sem SLA; confirme o atraso antes de operar'};
+   }catch(fallbackError){
+    throw Error('Nasdaq-100 indisponível. Netlify: '+String(err?.message||err)+
+     ' | Proxy público: '+String(fallbackError?.message||fallbackError));
+   }
   }finally{clearTimeout(timeout);if(signal)signal.removeEventListener('abort',abort)}
  }
  return Object.freeze({version:'11.2',SPEC,validate,load});
