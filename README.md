@@ -1,3 +1,24 @@
+# Storm Códex IA v11.1 — WIN e WDO integrados ao modo Índices (12/11/2026)
+
+## Motor brasileiro de minicontratos
+
+- Novos ativos **WIN (mini índice)** e **WDO (mini dólar)**, exclusivos dos botões do modo Índices. Nenhum dos dois foi adicionado ao Copy Trade.
+- Motor B3 independente de Clássico e Turbo: EMA 9/21, rompimento da faixa recente, ATR 14, razão de volatilidade, posição de fechamento, inclinação do preço e VWAP estimada de candles. Score /100 é técnico, não probabilidade estatística calibrada.
+- WIN: R$ 0,20 por ponto e ticks de 5 pontos. WDO: R$ 10 por ponto e ticks de 0,5 ponto, por minicontrato. Quantidade mínima visual para estudo: 1 contrato.
+- Fonte de consulta sem chave/login: **Biquote REST**, catálogo público de símbolos e OHLC M1/M5/M15/H1. O provedor precisa realmente oferecer o ticker B3 exato (ex.: WINZ26 e WDOZ26). O sistema verifica ticker, série de vencimento, OHLC, candles fechados e defasagem. **Se a fonte não disponibilizar WIN/WDO intradiários, o motor não emitirá sinais e exibirá diagnóstico.** Não mistura Ibovespa spot com WIN nem USD/BRL spot com WDO.
+- Seleção por calendário B3: WIN vence nos meses pares na quarta-feira mais próxima de 15 (ou sessão seguinte); WDO vence no primeiro dia útil do mês, com último pregão na sessão anterior. Não há contrato novo todo dia. A aplicação verifica mudança do contrato esperado a cada 20 segundos enquanto a aba Índices estiver ativa e manda atualizar as leituras.
+- Dias úteis incluem finais de semana e principais feriados B3 recorrentes; calendário extraordinário deve ser conferido com a bolsa e com o catálogo do provedor. Disponibilidade de contrato e liquidez não podem ser presumidas.
+- Memória adaptativa distingue o ticker vigente de contratos anteriores na calibração B3; acompanha resultados pendentes com os mesmos dados públicos, quando disponíveis. Sem backfill inventado, sem ordens reais.
+- **Teste com resposta real do provedor não foi possível neste ambiente.** Antes de usar sinais, valide a disponibilidade efetiva de WIN/WDO no painel e confirme cotações na corretora.
+
+Fontes B3 (regras): https://www.b3.com.br/pt_br/produtos-e-servicos/negociacao/renda-variavel/mercado-de-acoes/futuro-de-ibovespa.htm e https://b3.com.br/pt_br/produtos-e-servicos/negociacao/moedas/futuro-mini-de-taxa-de-cambio-de-reais-por-dolar-comercial.htm
+
+## Publicação completa
+
+A versão exige publicar **todos os arquivos** do diretório raiz, incluindo `index.html`, `b3-indices-v111.js`, `learning-v108.js` e `sw.js`. O código foi preparado para ser integrado à ramificação principal `main`, não como patch isolado. O Netlify estático não executa Javascript enquanto a aba estiver fechada.
+
+---
+
 # Storm Códex IA v11.0 — NAS100 corrigido e memória adaptativa em todos os ativos (12/11/2026)
 
 ## NAS100 / Nasdaq-100
