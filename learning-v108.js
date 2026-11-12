@@ -323,7 +323,9 @@
   try{
    await Promise.all(unique.map(async ({asset,tf})=>{
     try{
-     const data=(asset==='WIN'||asset==='WDO')&&root.StormB3Indices111?.load
+     const data=asset==='NASDAQ'&&root.StormNasdaq112?.load
+       ?await root.StormNasdaq112.load(tf,null)
+       :(asset==='WIN'||asset==='WDO')&&root.StormB3Indices111?.load
        ?await root.StormB3Indices111.load(asset,tf,null)
        :asset==='XAUUSD'&&tf==='H1'&&root.SGV931H1Recovery?.load
        ?await root.SGV931H1Recovery.load(asset,tf,null,feed)
