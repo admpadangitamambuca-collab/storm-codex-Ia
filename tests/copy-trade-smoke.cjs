@@ -67,6 +67,8 @@ vm.runInNewContext(match[1],ctx,{filename:'copy-trade.js'});
  assert.equal(copy.getReadings().length,32,'nova vela de cada um dos 16 pares gera leitura independente');
  await copy.scanNow();
  assert.equal(copy.getTrades().length,16,'não duplicar operação no mesmo candle');
+ assert.equal(copy.getReadings().length,32,'recalculo manual do mesmo candle nao duplica registros de leitura');
+ assert.equal(copy.getReadings().find(x=>x.id.includes('XAUUSD|M5')).checks,2,'refresh identico deve contar nova verificacao');
  clock+=3600000;
  delayFeed=true;
  await copy.scanNow();
