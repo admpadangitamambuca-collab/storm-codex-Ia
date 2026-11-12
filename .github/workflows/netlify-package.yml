@@ -1,4 +1,4 @@
-name: Publish Netlify ZIP
+name: Publish Netlify ZIP v11.2 (audited)
 on:
   push:
     branches: [main]
@@ -6,9 +6,16 @@ on:
       - index.html
       - sw.js
       - learning-v108.js
+      - b3-indices-v111.js
+      - storm-nasdaq-v112.js
+      - storm-precision-v112.js
+      - netlify/functions/nasdaq-ohlc.js
+      - tests/**
       - README.md
       - .github/workflows/netlify-package.yml
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -16,44 +23,71 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Validate Copy Trade before publishing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all active engines, data modules, and adaptive learning
         run: |
           node tests/copy-trade-smoke.cjs
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-      - name: Create standalone Netlify package
+          node --test tests/v112-smoke.test.js
+          node --check b3-indices-v111.js
+          node --check storm-nasdaq-v112.js
+          node --check storm-precision-v112.js
+          node --check learning-v108.js
+          node --check netlify/functions/nasdaq-ohlc.js
+      - name: Create complete v11.2 Netlify source ZIP
+        shell: bash
         run: |
-          mkdir -p dist/netlify
-          cp index.html sw.js learning-v108.js dist/netlify/
+          mkdir -p dist/netlify/netlify/functions
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js dist/netlify/
+          cp netlify/functions/nasdaq-ohlc.js dist/netlify/netlify/functions/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
-          STORM CODEX IA v10.8 — APRENDIZADO DOS TRES MOTORES
-          Conteudo completo para Netlify: index.html, sw.js e learning-v108.js na raiz.
-          Publicar: arraste este ZIP no Netlify Drop ou extraia os arquivos.
-          Modo Indices: Nasdaq-100 e S&P 500 com selecao M1/M5/M15/H1; abas e janelas recolhiveis.
-          O monitor ficticio inicia ao abrir o aplicativo e registra as leituras de 16 pares enquanto aberto.
-          Operacoes: apenas novas velas fechadas, com Turbo > 83/100 e OHLC/stop/alvo validos.
-          Os dados de mercado publicos podem atrasar; sem execucao em corretora.
-          Nao funciona com a aba fechada. Nao garante lucratividade. Historico salvo localmente no navegador.
-          Aprendizado: Clássico, Índices e Turbo com historicos locais separados; captura prospectiva de sinais >78/100.
-          Auditoria TP/stop em ate 6 velas; casos ambiguos, expirados ou incompletos nao contam como acerto/perda.
-          Parametros: EMAs, ATR, RSI, eficiencia do movimento, pressao do candle, rompimento, regime e sessao UTC.
-          Somente depois de 40 desfechos confirmados por mercado/periodo e validacao cronologica, score pode variar poucos pontos.
-          Leitura ficticia sem acesso a corretora. Requer navegador aberto e dados OHLC novos.
+          STORM CODEX IA 11.2 - AUDITORIA DE PACOTE
+          Este ZIP contem HTML, todos os JS externos e a funcao Netlify Nasdaq.
+          Deploy recomendado: conectar repositorio GitHub no Netlify para publicar funcoes.
+          Netlify Drop/ZIP estatico normalmente NAO executa Netlify Functions.
+          Modo estatico tenta proxy publico cors.dev para Yahoo ^NDX, sem garantia/SLA.
+          Nasdaq Yahoo ^NDX pode ter atraso e seus sinais sao bloqueados quando stale.
+          XAU Classico: movimento minimo US$4 em uma vela.
+          XAU Turbo: analise independente com ATR/estrutura, inclusive alvos menores.
+          Copy Trade: somente SIMULADO; Turbo >83 e OHLC/risco validos.
+          Memoria somente local/prospectiva quando navegador estiver aberto.
+          Fonte de mercado nao foi testada ao vivo pelo teste unitario.
           EOF
-          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip index.html sw.js learning-v108.js LEIA_ME.txt)
-          unzip -l dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          d=Path('dist/netlify')
+          html=(d/'index.html').read_text()
+          refs=re.findall(r'<script[^>]+src="([^"]+)"',html)
+          local=[r for r in refs if not r.startswith(('https://','http://','//'))]
+          missing=[r for r in local if not (d/r).is_file()]
+          print('JS local:',local)
+          if missing: raise SystemExit('Pacote incompleto: '+', '.join(missing))
+          required=['index.html','sw.js','learning-v108.js','b3-indices-v111.js',
+                    'storm-nasdaq-v112.js','storm-precision-v112.js','netlify/functions/nasdaq-ohlc.js']
+          for rel in required:
+              if not (d/rel).is_file(): raise SystemExit('Arquivo ausente: '+rel)
+          PY
+          (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip .)
+          unzip -t dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
+          unzip -l dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY
-          path: dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
+          name: Storm_Codex_IA_v11_2_AUDITADA_NETLIFY
+          path: dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
-          if gh release view v10.8 >/dev/null 2>&1; then
-            gh release upload v10.8 "$FILE" --clobber
+          FILE=dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
+          if gh release view v11.2-audit >/dev/null 2>&1; then
+            gh release upload v11.2-audit "$FILE" --clobber
           else
-            gh release create v10.8 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.8 - aprendizado em tres motores" --notes "Pacote Netlify completo com camada prospectiva de aprendizado >78/100 para Classico, Indices e Turbo. Copy ficticio >83 preservado. Sem promessa de lucratividade."
+            gh release create v11.2-audit "$FILE" --target "$GITHUB_SHA" \
+              --title "Storm Codex IA 11.2 - pacote auditado" \
+              --notes "Inclui todas as dependencias da v11.2. Publicacao por Git conecta Netlify Functions; ZIP estatico usa proxy publico sem garantia. Sem dados ao vivo nos testes."
           fi
