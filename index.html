@@ -5169,7 +5169,14 @@ function paint(){if(!$('stormCopyTrade'))return;
  $('stormCopyPending').textContent=String(stats.pending);
  $('stormCopyWinRate').textContent=stats.done?((100*stats.wins/stats.done).toFixed(1)+'%'):'—';
  $('stormCopyAudit').textContent=stats.count+' registro(s) · '+stats.unresolved+' inconclusivo(s)/expirado(s) · TP1 ou stop como encerramento integral';
- const health=$('stormCopyHealth');if(health)health.textContent=!started?'Monitor não iniciado':scanning?'Consultando 4 ativos…':scanError?'Algumas fontes indisponíveis':'Monitor ativo · '+(lastScanAt?fmtTime(lastScanAt):'inicializando');
+ const health=$('stormCopyHealth');if(health){
+  const states=[...dataStore.values()],healthy=states.filter(x=>x.closedAt&&!x.providerStale&&!x.error).length;
+  const failed=states.filter(x=>x.error).length,stale=states.filter(x=>x.providerStale&&!x.error).length;
+  health.textContent=!started?'Monitor não iniciado':scanning?'Consultando 4 ativos…':
+   states.length===0?'Aguardando primeira consulta':
+   healthy===0?'SEM OHLC ATUAL · '+failed+' erro(s) / '+stale+' atrasado(s)':
+   'OHLC recente em '+healthy+'/16 períodos · '+(lastScanAt?fmtTime(lastScanAt):'inicializando');
+ }
  const diag=$('stormCopyDiagnostics');if(diag){
   const key=assetShown+'|'+tfShown,bar=dataStore.get(key),e=bar?.lastEvaluation;
   const feed=bar?.error?'Erro na fonte: '+bar.error:bar?.providerStale?'Último candle defasado':bar?.closedAt?'OHLC recebido: '+fmtTime(bar.closedAt):'Aguardando cotação';
