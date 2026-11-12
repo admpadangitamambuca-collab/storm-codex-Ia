@@ -5657,7 +5657,7 @@ function status(){
  setText('stormIndexClose',when);
  const label=$('stormIndexState');if(label){
   label.dataset.state=valid?'live':stale?'stale':'wait';
-  label.textContent=valid?'● FEED VALIDADO':stale?'DADOS DEFASADOS':'AGUARDANDO FEED';
+  label.textContent=valid?'FEED VALIDADO':stale?'DADOS DEFASADOS':'AGUARDANDO FEED';
  }
  feed.dataset.state=valid?'live':stale?'stale':'wait';
  feed.textContent=valid
@@ -5732,7 +5732,7 @@ function makeIndices(){
   else if(indicesOn)turnOff(false);
  });
  const deactivate=id=>$(id)?.addEventListener('click',()=>{
-  requestAnimationFrame(()=>{if($(id)?.getAttribute('aria-pressed')==='true')turnOff(false)});
+  requestAnimationFrame(()=>{if($(id)?.getAttribute('aria-pressed')==='true')turnOff(true)});
  });
  deactivate('stormCopyBtn');deactivate('v83TurboBtn');
  window.addEventListener('vortex83-data',status);
@@ -5774,7 +5774,7 @@ function fold(el,collapsed,remember=true){
  if(toggle){toggle.setAttribute('aria-expanded',String(!collapsed));toggle.setAttribute('aria-label','Recolher '+(el.dataset.stormFoldTitle||'janela'))}
  if(summary)summary.setAttribute('aria-expanded',String(!collapsed));
  if(remember){try{localStorage.setItem('storm_v109_fold_'+el.dataset.stormFoldKey,collapsed?'1':'0')}catch(e){}}
- if(!collapsed)requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+ if(!collapsed&&remember)requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
 }
 function decorate(){
  for(const el of d.querySelectorAll(foldSelector)){
