@@ -1,38 +1,9 @@
 'use strict';
+// Legacy Precision 11.2 regressions; Nasdaq data adapter is now tested in v113-nasdaq-live.test.js.
 const test=require('node:test'),assert=require('node:assert/strict');
-const yahoo=require('../netlify/functions/nasdaq-ohlc.js');
-const nasdaq=require('../storm-nasdaq-v112.js');
 const precision=require('../storm-precision-v112.js');
 const fs=require('node:fs'),path=require('node:path');
 const now=()=>Date.now();
-function yahooResponse(tf='M5',symbol='^NDX'){
- const ms=nasdaq.SPEC[tf];
- const t0=Math.floor(now()/ms)*ms-ms*100;
- const timestamp=Array.from({length:100},(_,i)=>(t0+i*ms)/1000);
- const values=timestamp.map((_,i)=>28000+i*1.5);
- const quoted={open:values,high:values.map(x=>x+3),low:values.map(x=>x-3),close:values.map(x=>x+1),volume:values.map(()=>null)};
- return {chart:{result:[{meta:{symbol,instrumentType:'INDEX',exchangeDataDelayedBy:15},
-  timestamp,indicators:{quote:[quoted]}}]}};
-}
-test('Yahoo ^NDX retorna OHLC fechados e metadados do feed',async()=>{
- const response=await yahoo.pull('M5',async()=>({ok:true,json:async()=>yahooResponse('M5')}),now());
- assert.equal(response.feedSymbol,'^NDX');
- assert.equal(response.feedVerified,true);
- assert.equal(response.candles.length,100);
- assert.ok(response.candles.at(-1).t+nasdaq.SPEC.M5<now());
- assert.equal(nasdaq.validate(response,'M5').candles.length,100);
-});
-test('Não confundir Nasdaq100 com futuro NQ=F, ETF ou ticker alternativo',async()=>{
- await assert.rejects(yahoo.pull('M5',async()=>({ok:true,json:async()=>yahooResponse('M5','NQ=F')}),now()),/outro ticker/);
- assert.throws(()=>nasdaq.validate({...yahooResponse('M5'),requestedAsset:'NASDAQ',requestedTf:'M5',feedSymbol:'NQ=F',feedVerified:true,candles:[]},'M5'),/ticker/);
-});
-test('Nasdaq não aceita vela ainda aberta ou retorno de outro período',()=>{
- const ms=nasdaq.SPEC.M5,t0=Math.floor(now()/ms)*ms-ms*100;
- const candles=Array.from({length:100},(_,i)=>({t:t0+i*ms,open:28000,high:28004,low:27998,close:28002}));
- const answer={requestedAsset:'NASDAQ',requestedTf:'M5',feedSymbol:'^NDX',feedVerified:true,candles:[...candles,{...candles.at(-1),t:Math.floor(now()/ms)*ms}]};
- assert.equal(nasdaq.validate(answer,'M5').candles.length,100);
- assert.throws(()=>nasdaq.validate(answer,'M1'),/ticker\/período/);
-});
 function goldBars(){
  const ms=60000,end=Math.floor(now()/ms)*ms-ms;
  return Array.from({length:120},(_,i)=>{
@@ -62,9 +33,9 @@ test('Stale OHLC e veto de risco do motor base bloqueiam o Turbo',()=>{
 });
 test('HTML principal referencia a fonte Nasdaq e os dois motores originais',()=>{
  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
- assert.match(html,/if\(asset==='NASDAQ'\)return window\.StormNasdaq112\.load/);
+ assert.match(html,/if\(asset==='NASDAQ'\)return window\.StormNasdaqLive113\.load/);
  assert.match(html,/storm-precision-v112\.js/);
- assert.match(html,/storm-nasdaq-v112\.js/);
+ assert.match(html,/storm-nasdaq-live-v113\.js/);
  assert.match(html,/StormPrecision112\?\.enhanceClassic/);
  assert.match(html,/goldIndependent/);
  assert.match(html,/copy/i);
