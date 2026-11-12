@@ -13,7 +13,7 @@
  'use strict';
  const TF=Object.freeze({M1:60000,M5:300000,M15:900000,H1:3600000});
  const ENGINES=['classic','indices','turbo'];
- const ASSETS=Object.freeze(['XAUUSD','BTCUSD','BTCUSDT','EURUSD','USDJPY','USDCAD','USDCHF','AUDUSD','NASDAQ','SP500']);
+ const ASSETS=Object.freeze(['XAUUSD','BTCUSD','BTCUSDT','EURUSD','USDJPY','USDCAD','USDCHF','AUDUSD','NASDAQ','SP500','WIN','WDO']);
  const THRESHOLD=78,HORIZON=6,MAX_ROWS=700,KEY_PREFIX='storm_v108_outcome_';
  const armed=new Map(),lastModels=new Map(),reconcileCursor={next:0,last:0,busy:false,completed:0,error:''};
  let storageError='',renderQueued=false,importMessage='';
@@ -143,7 +143,7 @@
   return sum/(mass+priorMass);
  }
  function calibrate(rows,nowClose,context){
-  const observed=rows.filter(r=>['win','loss'].includes(r.status)
+  const observed=rows.filter(r=>(!context.contract||r.contract===context.contract)&&['win','loss'].includes(r.status)
    &&finite(r.closedAtResult)&&r.closedAtResult<=nowClose&&finite(r.R)&&r.t<nowClose)
    .sort((a,b)=>a.t-b.t);
   const overall=aggregate(observed);
@@ -202,7 +202,7 @@
    &&closedAt<=Date.now()+1500&&Date.now()-closedAt<=TF[tf]+90000;
   const rows=rowsOf(engine,asset,tf);
   const changed=live?settle(rows,bars,tf):false;
-  const stats=calibrate(rows,closedAt,{...f,tf,side:p.side});
+  const stats=calibrate(rows,closedAt,{...f,tf,side:p.side,contract:p.contract||null});
   const technical=live&&f.ready?f.technical:0;
   const learned=live&&stats.active?stats.adjustment:0;
   const score=clamp(Math.round(base+technical+learned),0,100);
@@ -215,7 +215,7 @@
     // Capturar todos os NOVOS sinais >78, inclusive com operações pendentes.
     // Sobreposição é neutralizada em calibrate() pela amostragem independente.
     if(p.trackAllowed!==false&&score>THRESHOLD&&levels(p)){
-     const record={id:seenKey+'|'+last.t,engine,asset,tf,t:last.t,closedAt,
+     const record={id:seenKey+'|'+last.t,engine,asset,tf,contract:p.contract||null,t:last.t,closedAt,
       capturedAt:Date.now(),side:p.side,score,baseScore:base,technical,learned,
       entry:p.entry,stop:p.stop,tp:p.tp,atr:f.atr,regime:f.regime,session:f.session,
       efficiency:f.efficiency,atrRatio:f.atrRatio,source:'OHLC prospectivo',
@@ -316,7 +316,9 @@
   try{
    await Promise.all(unique.map(async ({asset,tf})=>{
     try{
-     const data=asset==='XAUUSD'&&tf==='H1'&&root.SGV931H1Recovery?.load
+     const data=(asset==='WIN'||asset==='WDO')&&root.StormB3Indices111?.load
+       ?await root.StormB3Indices111.load(asset,tf,null)
+       :asset==='XAUUSD'&&tf==='H1'&&root.SGV931H1Recovery?.load
        ?await root.SGV931H1Recovery.load(asset,tf,null,feed)
        :await feed.load(asset,tf,null);
      if(data?.mode!=='live'||!Array.isArray(data.candles)||data.candles.length<2)return;
@@ -406,7 +408,7 @@
   const area=doc.getElementById('stormLearning108Body');if(!area)return;
   const asset=doc.getElementById('assetSelect')?.value||'XAUUSD',tf=doc.querySelector('.tf-btn.active')?.dataset.tf||'M5';
   const lines=ENGINES.map(engine=>{
-   const relevant=engine==='indices'?['NASDAQ','SP500'].includes(asset):engine==='classic'?!['NASDAQ','SP500'].includes(asset):true;
+   const relevant=engine==='indices'?['NASDAQ','SP500','WIN','WDO'].includes(asset):engine==='classic'?!['NASDAQ','SP500','WIN','WDO'].includes(asset):true;
    const current=lastModels.get(engine+'|'+asset+'|'+tf);
    const storage=rowsOf(engine,asset,tf);
    const total=storage.filter(r=>['win','loss'].includes(r.status));
@@ -429,7 +431,7 @@
   if(!matrix){
    matrix=doc.createElement('details');matrix.id='stormMemoryAllAssets';
    matrix.style.cssText='margin:13px 0 0;border:1px solid #41645f;border-radius:12px;padding:11px;background:#10282a';
-   const summary=doc.createElement('summary');summary.textContent='Memória dos 10 ativos · visão geral';summary.style.cssText='cursor:pointer;font-weight:800;color:#bcebd6';
+   const summary=doc.createElement('summary');summary.textContent='Memória dos 12 ativos · visão geral';summary.style.cssText='cursor:pointer;font-weight:800;color:#bcebd6';
    const table=doc.createElement('div');table.id='stormMemoryAllTable';
    table.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px;margin-top:12px';
    matrix.append(summary,table);area.after(matrix);
