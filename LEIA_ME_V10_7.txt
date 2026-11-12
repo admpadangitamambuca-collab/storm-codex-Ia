@@ -1,0 +1,27 @@
+STORM CODEX IA v10.7 - INDICES E JANELAS RECOLHIVEIS
+Gerado a partir da versao 10.6 do projeto (interface anterior 10.5).
+
+CONTEUDO DO ZIP
+index.html - aplicativo completo e editavel; instalar na raiz do Netlify.
+sw.js - service worker para notificacoes; instalar na mesma raiz.
+LEIA_ME.txt - instrucoes e limites.
+
+O QUE MUDOU
+- Modo INDICES separado no cabecalho: Nasdaq-100 (NASDAQ) e S&P 500 (SP500).
+- Timeframes M1/M5/M15/H1, grafico e analise usando candles OHLC fechados e identificacao verificada do ticker.
+- Sem fabricacao de valores se Biquote estiver indisponivel ou nao retornar contrato identificado.
+- Controles recolher/expandir em paineis, preservando dados, botoes e historico.
+- Botao Recolher tudo e Expandir tudo para as janelas. Estado das janelas com identificador salvo no navegador.
+- Clássico, Turbo e Copy Trade seguem incluidos. Copy simulado continua monitorando 4 ativos x 4 timeframes,
+  usando criterio Turbo estritamente maior que 83 e lotes XAUUSD 0,10 e Forex 0,15.
+
+INSTALAR
+1. Extraia este ZIP ou envie diretamente no Netlify Drop.
+2. Para deploy manual por arquivos, index.html e sw.js devem ficar na raiz.
+3. Recarregue a pagina apos publicar para ler a nova versao.
+4. Se o indice ficar indisponivel, o provedor publico nao retornou OHLC/contrato seguro; confira o diagnostico.
+
+IMPORTANTE
+O Copy Trade e ficticio. Um site estatico NAO registra operacoes com a aba fechada ou suspensa.
+Os scores sao heuristicas, nao probabilidades comprovadas. Nao envia ordens reais.
+Testes internos sao de sintaxe e feed simulado. Nao ha validacao com corretora, Biquote em tempo real ou Netlify publicado.
