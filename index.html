@@ -4674,6 +4674,7 @@ const LOTS={XAUUSD:.10,EURUSD:.15,USDJPY:.15,AUDUSD:.15};
 const KNOWN_LOTS={XAUUSD:[.01,.10],EURUSD:[.04,.15],USDJPY:[.04,.15],AUDUSD:[.04,.15]}; // histórico preservado
 const CONTRACT={XAUUSD:100,EURUSD:100000,USDJPY:100000,AUDUSD:100000};
 const STORAGE_PREFIX='storm_codex_v95_copytrade_real_observed_';
+const READING_PREFIX='storm_codex_v106_copy_readings_';
 const $=id=>document.getElementById(id);
 const ok=x=>Number.isFinite(x);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4691,6 +4692,21 @@ function storageKey(){return STORAGE_PREFIX+String(window.SGUserHistoryKey||'usu
 function loadTrades(){try{return (JSON.parse(localStorage.getItem(storageKey())||'[]')||[])
  .filter(r=>r&&ASSETS.includes(r.asset)&&FRAMES[r.tf]&&r.origin==='observed_copy_v95'&&KNOWN_LOTS[r.asset]?.includes(r.lot)&&ok(r.entry)&&ok(r.stop)&&ok(r.tp)&&ok(r.t)).slice(0,maxTradeCount)}catch{return []}}
 function saveTrades(rows){try{localStorage.setItem(storageKey(),JSON.stringify(rows.slice(0,maxTradeCount)))}catch(e){console.warn('Copy Trade: armazenamento local indisponível',e)}}
+function readingsKey(){return READING_PREFIX+String(window.SGUserHistoryKey||'usuario_local')}
+function loadReadings(){try{const x=JSON.parse(localStorage.getItem(readingsKey())||'[]');return Array.isArray(x)?x.filter(r=>r&&ASSETS.includes(r.asset)&&FRAMES[r.tf]&&ok(r.closedAt)).slice(0,500):[]}catch{return []}}
+function recordReading(asset,tf,bar,evaluation){
+ const id=asset+'|'+tf+'|'+bar.closedAt,now=Date.now(),score=Number(evaluation?.score);
+ const row={id,asset,tf,closedAt:bar.closedAt,checkedAt:now,source:bar.source||'',score:Number.isFinite(score)?score:null,
+  ready:!!evaluation?.ready,side:evaluation?.ctx?.plan?.side||'wait',reason:String(evaluation?.reason||'Sem avaliacao').slice(0,220)};
+ const rows=loadReadings(),at=rows.findIndex(r=>r.id===id);
+ if(at>=0){
+  const prior=rows[at];
+  if(prior.score===row.score&&prior.ready===row.ready&&prior.reason===row.reason&&prior.side===row.side)return;
+  rows.splice(at,1);row.revisions=(prior.revisions||0)+1;
+ }else row.revisions=0;
+ rows.unshift(row);
+ try{localStorage.setItem(readingsKey(),JSON.stringify(rows.slice(0,500)))}catch(e){console.warn('Copy Trade: historico de leituras indisponivel',e)}
+}
 function lotPnl(rec,exit){if(!ok(exit)||exit<=0)return null;
  const change=(exit-rec.entry)*(rec.side==='buy'?1:-1)*rec.lot*CONTRACT[rec.asset];
  // USDJPY é cotado em ienes: o P&L em JPY deve ser convertido pela cotação USD/JPY de saída.
@@ -4827,6 +4843,7 @@ function observe(asset,tf,bar){
  // Atualiza score e motivos TAMBÉM ao pressionar Refresh na mesma vela.
  // Esse recálculo não é confundido com a abertura de uma nova operação.
  bar.lastEvaluation=evaluated;
+ recordReading(asset,tf,bar,evaluated);
  const prospective=firstProspective||(!first&&bar.closedAt>last);
  if(!prospective||!evaluated?.analysis||!evaluated?.ctx?.plan)return false;
  // Fonte ou níveis tecnicamente incompletos: tentar recuperar o mesmo fechamento válido.
@@ -4937,9 +4954,11 @@ function copyTabHTML(){return `<section id="stormCopyTrade" aria-label="Simulado
  <p><b>Regra única de seleção: confluência Turbo &gt;83/100</b> (83,0 não entra; 83,1 entra). Todas as leituras acima desse limite com vela fechada, direção e preços de entrada, stop e alvo válidos geram uma operação fictícia, mesmo que o filtro seletivo do painel Turbo aponte aguardando confirmação. <b>Sem nota mínima do motor original nem outro filtro estratégico de entrada.</b> Resultados são simulações, não ordens reais ou probabilidade comprovada. XAUUSD: 0,10 lote · EURUSD, USDJPY e AUDUSD: 0,15 lote. Histórico existente mantido.</p></div>
  <div class="storm-v95-action-row"><span id="stormCopyHealth" class="storm-v95-chip">Monitor não iniciado</span><button type="button" class="storm-v95-btn" id="stormCopyRefresh">↻ Consultar OHLC</button><button type="button" class="storm-v95-btn" id="stormCopyExport">↓ Exportar operações</button></div></header>
  <p class="storm-v95-foot" id="stormCopyDiagnostics" role="status" aria-live="polite" style="margin:6px 0 14px;overflow-wrap:anywhere">Monitorando M1, M5, M15 e H1.</p>
+ <p class="storm-v95-foot" id="stormCopyReadingSummary" role="status">Aguardando leituras novas e verificadas.</p>
  <details class="storm-v95-foot" style="margin:0 0 14px;border:1px solid #344254;border-radius:10px;padding:10px 12px">
  <summary style="cursor:pointer;font-weight:750;color:#e9d0a1">Diagnóstico dos 16 períodos monitorados (expandir)</summary>
  <div id="stormCopyFeedGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:12px"></div>
+ <p class="storm-v95-foot" style="margin-top:10px">Cada vela fechada recebe uma leitura por ativo e tempo gráfico. Refresh reavalia a vela atual sem duplicar operações. O monitor deste site estático funciona somente com a página em execução; o celular pode suspender as consultas quando a tela é bloqueada.</p>
  </details>
  <div class="storm-v95-stats"><div class="storm-v95-stat"><small>SALDO ACUMULADO FICTÍCIO</small><b id="stormCopyTotal">US$ 0,00</b></div>
  <div class="storm-v95-stat"><small>TAKES / STOPS</small><b id="stormCopyCounts">0 / 0</b></div>
@@ -4984,8 +5003,12 @@ function ensureUI(){if($('stormCopyBtn'))return;
  });
  document.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(drawAll,450)));
  $('assetSelect')?.addEventListener('change',()=>setTimeout(drawAll,600));
- setInterval(()=>{if(started&&!scanning&&!document.hidden)scan(false);if(!document.hidden)requestAnimationFrame(drawAll)},20000);
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&started)scan(false)});
+ setInterval(()=>{if(started&&!scanning&&!document.hidden)scan(false);if(!document.hidden)requestAnimationFrame(drawAll)},10000);
+ // Em celulares, retomar consultas apos suspensao dos timers e reconexao.
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&started)scan(true)});
+ window.addEventListener('pageshow',()=>{if(started&&!document.hidden)scan(true)});
+ window.addEventListener('online',()=>{if(started&&!document.hidden)scan(true)});
+ window.addEventListener('focus',()=>{if(started&&!document.hidden&&Date.now()-lastScanAt>25000)scan(true)});
  paint();drawAll();
  // O simulador deve observar desde que o app esteja aberto, sem exigir visitar a aba Copy.
  const boot=()=>{startMonitor();if(!document.hidden)scan(true)};
@@ -5152,6 +5175,15 @@ function paint(){if(!$('stormCopyTrade'))return;
   const assessment=e?.reason||(!armedAt.has(key)?'Inicializando observação': 'Aguardando próximo fechamento para avaliar Turbo >83');
   diag.textContent=assetShown+' / '+tfShown+' · '+feed+' · '+(Number.isFinite(e?.score)?'Turbo '+e.score.toFixed(1)+'/100 · ':'')+assessment;
  }
+ const readingSummary=$('stormCopyReadingSummary');if(readingSummary){
+  const readings=loadReadings(),recent=readings.filter(r=>r.checkedAt>Date.now()-3600000);
+  const eligible=recent.filter(r=>r.ready).length,over83=recent.filter(r=>Number.isFinite(r.score)&&r.score>83).length;
+  const newest=readings.reduce((m,r)=>Math.max(m,r.checkedAt||0),0);
+  readingSummary.textContent='Leituras gravadas: '+readings.length+' · Novas/alteradas na ultima hora: '+recent.length+
+   ' · Turbo >83: '+over83+' · Elegiveis: '+eligible+
+   ' · Ultima leitura: '+(newest?fmtTime(newest):'ainda nao recebida')+
+   (navigator.onLine===false?' · Sem conexao':'');
+ }
  const feedGrid=$('stormCopyFeedGrid');
  if(feedGrid)feedGrid.innerHTML=ASSETS.flatMap(asset=>Object.keys(FRAMES).map(tf=>{
   const key=asset+'|'+tf,bar=dataStore.get(key),e=bar?.lastEvaluation;
@@ -5179,7 +5211,7 @@ function exportCSV(){const rows=loadTrades();const cols=['fechamento','ativo','t
  const link=document.createElement('a'),url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
  link.href=url;link.download='STORM_CODEX_v9_6_COPY_TRADE_'+new Date().toISOString().slice(0,10)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-window.StormCopyTrade95={version:'copy-turbo-83-2026-11-07',getTrades:loadTrades,getStatus:()=>({started,monitorStartedAt,scanning,queuedForce,scanSerial,scanError,lastScanAt,scoreThreshold:'>83',simulatedOnly:true}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
+window.StormCopyTrade95={version:'copy-turbo-83-v10.6',getTrades:loadTrades,getReadings:loadReadings,getStatus:()=>({started,monitorStartedAt,scanning,queuedForce,scanSerial,scanError,lastScanAt,readingCount:loadReadings().length,visible:!document.hidden,online:navigator.onLine!==false,scoreThreshold:'>83',simulatedOnly:true}),getFeeds:()=>Object.fromEntries([...dataStore.entries()].map(([k,v])=>[k,{closedAt:v.closedAt,ageMs:Date.now()-v.closedAt,source:v.source,error:v.error,stale:v.providerStale,candles:v.candles?.length,armedAt:armedAt.get(k),eval:{ready:v.lastEvaluation?.ready,score:v.lastEvaluation?.score,reason:v.lastEvaluation?.reason}}])),
  // Funções puras para auditoria e testes. Não executam ordens.
  lotPnl,settleOne,aggregate,scanNow:()=>{startMonitor();return scan(true)}};
 window.StormCopyTrade96=window.StormCopyTrade95;
