@@ -2667,11 +2667,17 @@ function computeSnapshot(candles,mode,extra={}){
    side:analysis.side,baseScore:analysis.score,entry:analysis.price,
    stop:Number(analysis.price)- (analysis.side==='buy'?1:-1)*Number(analysis.stopDist),
    tp:Number(analysis.price)+ (analysis.side==='buy'?1:-1)*Number(analysis.targetDist),
-   trackAllowed:analysis.quality!=='EVITAR'&&analysis.v93?.operational===true}
+   // Histórico prospectivo de sinais >78: observação não equivale a liberação operacional.
+   // O módulo de memória valida entrada/stop/alvo e não registra demo ou OHLC defasado.
+   trackAllowed:['buy','sell'].includes(analysis.side)}
  );
- if(adaptive108)analysis={...analysis,
-  score:analysis.v93?.operational?Math.min(95,adaptive108.score):analysis.score,
-  learning108:adaptive108};
+ if(adaptive108){
+  const riskBlocked=analysis.v93?.operational===false||analysis.quality==='EVITAR';
+  const observedScore=Math.min(95,adaptive108.score);
+  // Aprender com um veto sem jamais reverter o veto por bônus de desempenho.
+  analysis={...analysis,score:riskBlocked?Math.min(analysis.score,observedScore):observedScore,
+   learning108:adaptive108};
+ }
  const stats=backtest(candles,context,tf,mode==='live'?v6Settings.spread:0);
  const observed=mode==='live'?V72().observedCalibration(getHistory(extra.asset,tf),{asset:extra.asset,tf,side:legacyAnalysis.side,regime:legacyAnalysis.regime,score:legacyAnalysis.score,atClose:candles.at(-1).t+TF[tf]}):{available:false};
  const probability=observed.available?{...observed,sourceType:'observed'}:{...V72().historicalEstimate(stats,legacyAnalysis.side,legacyAnalysis.score),sourceType:'backtest'};
