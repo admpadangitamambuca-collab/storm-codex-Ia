@@ -69,3 +69,31 @@ test('HTML principal referencia a fonte Nasdaq e os dois motores originais',()=>
  assert.match(html,/goldIndependent/);
  assert.match(html,/copy/i);
 });
+
+const b3=require('../b3-indices-v111.js');
+const learning=require('../learning-v108.js');
+
+test('Vencimento WIN/WDO segue B3 e nunca muda arbitrariamente a cada pregão',()=>{
+ const date=t=>Date.parse(t+'T13:00:00-03:00');
+ assert.equal(b3.contractFor('WIN',date('2026-11-12')).symbol,'WINZ26');
+ assert.equal(b3.contractFor('WIN',date('2026-12-16')).symbol,'WINZ26');
+ assert.equal(b3.contractFor('WIN',date('2026-12-17')).symbol,'WING27');
+ assert.equal(b3.contractFor('WDO',date('2026-11-30')).symbol,'WDOZ26');
+ assert.equal(b3.contractFor('WDO',date('2026-12-01')).symbol,'WDOF27');
+ assert.equal(b3.trustedSymbol('WIN',{symbol:'WDOF27',exchange:'B3'}),null);
+});
+test('Memória não liquida contrato vencido com candles do próximo vencimento',()=>{
+ const ms=60000,t=Date.now()-ms*4;
+ const rows=[{id:'o',engine:'indices',asset:'WIN',tf:'M1',contract:'WINZ26',
+   t,status:'pending',side:'buy',entry:140000,stop:139995,tp:140010}];
+ const bars=[{t,open:140000,high:140002,low:139998,close:140001},
+  {t:t+ms,open:140001,high:140012,low:139996,close:140007}];
+ assert.equal(learning.settle(rows,bars,'M1','WING27'),true);
+ assert.equal(rows[0].status,'incomplete');
+});
+test('Notícias rejeitam hyperlinks javascript: e data: no DOM',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ assert.match(html,/const safeNewsUrl=/);
+ assert.ok(html.includes("['https:','http:'].includes(u.protocol)"));
+ assert.ok(html.includes('href="${safeNewsUrl(n.url)}"'));
+});
