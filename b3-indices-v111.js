@@ -196,22 +196,30 @@
   const body=(last.close-last.open)*direction/Math.max(atr,1e-8);
   const pressure=(direction>0?(last.close-last.low):(last.high-last.close))/Math.max(last.high-last.low,1e-8);
   const expansion=atr/Math.max(prevAtr,1e-8);
-  const total=bars.slice(-30).reduce((s,b)=>{const w=b.volume>0?b.volume:b.tickVolume>0?b.tickVolume:1;return {p:s.p+((b.high+b.low+b.close)/3)*w,w:s.w+w};},{p:0,w:0});
-  const vwap=total.p/total.w;
+  const localDay=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'});
+  const anchor=localDay.format(new Date(last.t));
+  // Não acumula candles de pregões anteriores na referência de preço médio.
+  const session=bars.filter(b=>localDay.format(new Date(b.t))===anchor);
+  const volumeKnown=session.length>=5&&session.some(b=>b.volume>0||b.tickVolume>0);
+  const total=session.slice(-120).reduce((s,b)=>{
+   const w=b.volume>0?b.volume:b.tickVolume>0?b.tickVolume:1;
+   return {p:s.p+((b.high+b.low+b.close)/3)*w,w:s.w+w};
+  },{p:0,w:0});
+  const vwap=total.p/Math.max(total.w,1);
+  const volumeBasis=volumeKnown?'Preço médio ponderado por volume informado':'Preço típico médio (sem volume informado)';
   let score=52;
   score+=clamp(Math.abs(maGap)*9,0,13);
   score+=Math.sign(direction*slope)*clamp(Math.abs(slope)*9,0,10);
   score+=breakout?12:0;
   score+=clamp(body*11,-10,12);
   score+=clamp((pressure-.5)*12,-6,6);
-  score+=direction*(last.close-vwap)>0?5:-5;
+  score+=session.length>=5?(direction*(last.close-vwap)>0?5:-5):0;
   score+=expansion>.65&&expansion<1.85?4:-9;
   const tick=product==='WIN'?5:.5;
   const stopDist=Math.ceil(Math.max(atr*.95,tick*3)/tick)*tick;
   const targetDist=Math.ceil(stopDist*1.45/tick)*tick;
   const nowBrazil=saoPauloDate();
-  const dayAllowed=new Date(last.t+PERIOD[tf].ms).toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'})===
-    new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+  const dayAllowed=localDay.format(new Date(last.t+PERIOD[tf].ms))===localDay.format(new Date());
   const todayBusiness=business(nowBrazil);
   const fresh=!meta.providerStale;
   const priceOnTick=Math.abs(last.close/tick-Math.round(last.close/tick))<0.0001;
@@ -222,11 +230,11 @@
   const reasons=[
    'WIN/WDO: motor brasileiro independente; score heurístico, não probabilidade',
    'EMAs 9/21 '+(direction>0?'altistas':'baixistas')+' · distância/ATR '+Math.abs(maGap).toFixed(2),
-   'VWAP de candles '+(last.close>vwap?'abaixo do preço':'acima do preço')+' · '+(breakout?'rompimento de 21 velas':'sem rompimento'),
+   'Referência intradiária: '+volumeBasis+' '+vwap.toFixed(2)+' · '+(last.close>vwap?'preço acima':'preço abaixo')+' · '+(breakout?'rompimento de 21 velas':'sem rompimento'),
    'ATR 14 '+atr.toFixed(2)+' · volatilidade '+expansion.toFixed(2)+'×',
    'Entrada '+last.close.toFixed(2)+' · stop '+stopDist.toFixed(2)+' · alvo '+targetDist.toFixed(2)
   ];
-  return {side,score:Math.round(clamp(score,0,95)),price:last.close,e9:ef,e21:es,atr,
+  return {side,score:Math.round(clamp(score,0,95)),price:last.close,e9:ef,e21:es,atr,referencePrice:vwap,referenceBasis:volumeBasis,sessionBars:session.length,
    quality,operationalReason:reason,regime:breakout?'rompimento':Math.abs(maGap)>.30?'tendencia':'lateral',
    targetDist,stopDist,netRR:targetDist/stopDist,
    reasons,parts:{'Estrutura B3':score},weights:{'Estrutura B3':100},
