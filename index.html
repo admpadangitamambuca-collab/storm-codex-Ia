@@ -5713,8 +5713,9 @@ body.storm-indices-on #stormIndicesPane.storm-folded .storm-fold-mark{color:#85e
 
 (function(){'use strict';
 const d=document,$=id=>d.getElementById(id);
-const indices=new Set(['NASDAQ','SP500']);
+const indices=new Set(['NASDAQ','SP500','WIN','WDO']);
 let indicesOn=false,previousAsset='XAUUSD',lastIndex='NASDAQ',initialized=false,observerQueued=false;
+const expectedB3={WIN:null,WDO:null};
 const icon='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3.5" y="17" width="4" height="10" rx="1"/><rect x="11.5" y="11" width="4" height="16" rx="1"/><rect x="19.5" y="15" width="4" height="12" rx="1"/><path d="M3 12.5 11 6l7 4 10-7M23 3h5v5"/></svg>';
 function setText(id,value){const el=$(id);if(el)el.textContent=value;}
 function activeTf(){return d.querySelector('.tf-btn.active')?.dataset.tf||'M5';}
@@ -5725,10 +5726,12 @@ function viewState(){
 function status(){
  const asset=$('assetSelect')?.value,feed=$('stormIndexFeed');
  if(!feed)return;
- if(!indices.has(asset)){feed.textContent='Selecione Nasdaq-100 ou S&P 500 para consultar candles reais.';feed.dataset.state='wait';return}
+ if(!indices.has(asset)){feed.textContent='Selecione Nasdaq, S&P 500, WIN ou WDO para consultar candles reais.';feed.dataset.state='wait';return}
  const tf=activeTf(),state=viewState(),n=state?.candles?.length||0,source=String(state?.feedSymbol||'').toUpperCase();
- const expected=asset==='NASDAQ'?'NAS100':'S&P 500';
- const identified=asset==='NASDAQ'
+ const b3=asset==='WIN'||asset==='WDO';
+ const desired=b3?window.StormB3Indices111?.contractFor?.(asset):null;
+ const expected=b3?(desired?.symbol||asset):asset==='NASDAQ'?'NAS100':'S&P 500';
+ const identified=b3?state?.feedVerified&&source===expected:asset==='NASDAQ'
   ?state?.feedVerified&&/^(NAS100(?:[._-]CFD)?|US100(?:[._-]CFD)?|USTEC(?:[._-]CFD)?|NASDAQ100|NDX)$/.test(source)
   :/^(US500|SP500|SPX500|SPX|US500USD|SP500USD|SPXUSD|SPX500USD)([._-][A-Z0-9]+)?$/.test(source);
  const valid=n>=2&&state?.mode==='live'&&!state?.providerStale&&identified;
@@ -5737,8 +5740,8 @@ function status(){
  const when=timestamp?new Date(timestamp).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
  const analysis=state?.classicAnalysis||state?.analysis;
  const score=Number(analysis?.score);
- setText('stormIndexSymbol',source||((asset==='NASDAQ')?'NAS100':'S&P 500'));
- setText('stormIndexSymbolHint',asset==='NASDAQ'?(source&&source!=='NAS100'?'Nasdaq-100 verificado · NAS100 indisponível':'Ticker preferencial NAS100 · Biquote'):'Identificação validada pela Biquote');
+ setText('stormIndexSymbol',source||expected);
+ setText('stormIndexSymbolHint',b3?'B3 · '+(asset==='WIN'?'R$0,20':'R$10')+'/ponto':asset==='NASDAQ'?(source&&source!=='NAS100'?'Nasdaq-100 verificado · NAS100 indisponível':'Ticker preferencial NAS100 · Biquote'):'Identificação validada pela Biquote');
  setText('stormIndexTimeframe',tf);
  setText('stormIndexBars',n?String(n)+' candles fechados':'Aguardando OHLC');
  setText('stormIndexScore',valid&&Number.isFinite(score)?Math.round(Math.min(100,Math.max(0,score)))+'/100':'—');
@@ -5795,7 +5798,7 @@ function makeIndices(){
   '<div class="storm-index-head"><div class="storm-index-heading"><div class="storm-index-glyph">'+icon+'</div>'+
   '<div><span class="storm-index-kicker">Storm Códex IA · Index Desk</span><h2>Índices de mercado</h2></div></div>'+
   '<span id="stormIndexState" class="storm-index-state" data-state="wait">AGUARDANDO FEED</span></div>'+
-  '<p class="storm-index-intro">Nasdaq-100 com ticker NAS100 na Biquote. Análise técnica por vela fechada, confluência e níveis de risco, com o mesmo motor de Índices. O sinal não é ordem de negociação.</p>'+
+  '<p class="storm-index-intro">Nasdaq, S&P 500 e B3: WIN/WDO com motor independente, contrato automático e candles gratuitos validados. Sem feed real, sem sinal.</p>'+
   '<div class="storm-index-toolbar"><div class="storm-index-buttons" role="group" aria-label="Selecionar índice">'+
   '<button type="button" class="storm-index-choice" data-index-asset="NASDAQ" aria-pressed="false">▥ &nbsp; Nasdaq-100</button>'+
   '<button type="button" class="storm-index-choice" data-index-asset="SP500" aria-pressed="false">▤ &nbsp; S&amp;P 500</button></div>'+
@@ -5809,6 +5812,7 @@ function makeIndices(){
   '<div id="stormIndexFeed" role="status" aria-live="polite" data-state="wait">Consultando dados públicos…</div>'+
   '<p class="storm-index-foot">Candles somente após fechamento; sem mistura de tickers nem estimativa de probabilidade real. Se o NAS100 estiver indisponível, o painel sinaliza a falha.</p>';
  tf.before(panel);
+ panel.querySelector('.storm-index-buttons')?.insertAdjacentHTML('beforeend','<button type="button" class="storm-index-choice" data-index-asset="WIN" aria-pressed="false">▥ Mini índice · WIN</button><button type="button" class="storm-index-choice" data-index-asset="WDO" aria-pressed="false">▤ Mini dólar · WDO</button>');
  btn.addEventListener('click',()=>indicesOn?turnOff(true):choose(indices.has(select.value)?select.value:lastIndex));
  panel.addEventListener('click',e=>{
   const choice=e.target.closest('[data-index-asset]');
@@ -5826,7 +5830,14 @@ function makeIndices(){
  window.addEventListener('vortex83-data',status);
  d.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(status,30)));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)status()});
- setInterval(()=>{if(!document.hidden&&indicesOn)status()},20000);
+ setInterval(()=>{if(document.hidden||!indicesOn)return;const asset=$('assetSelect')?.value;
+  if(asset==='WIN'||asset==='WDO'){
+   const next=window.StormB3Indices111?.contractFor?.(asset)?.symbol;
+   if(next&&expectedB3[asset]&&expectedB3[asset]!==next)$('refreshAll')?.click();
+   if(next)expectedB3[asset]=next;
+  }
+  status();
+ },20000);
  syncUI();
 }
 const foldSelector=[
@@ -5915,5 +5926,11 @@ function init(){
 if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
+<style id="storm-b3-v111-style">
+.storm-index-buttons:has([data-index-asset="WIN"]){display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.storm-index-buttons:has([data-index-asset="WIN"]) .storm-index-choice{font-size:11px;white-space:nowrap}
+@media(max-width:740px){.storm-index-buttons:has([data-index-asset="WIN"]){grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script src="b3-indices-v111.js"></script>
 <script src="learning-v108.js"></script>
 </body></html>
