@@ -1401,7 +1401,7 @@ async function resolveSP500(signal){
   items.push(...found);
   const candidates=items.map(x=>({name:String(x.name||x.symbol||x.ticker||'').trim().toUpperCase(),type:String(x.type||''),description:String(x.description||x.displayName||'')}))
   .filter(x=>/^(US500|SP500|SPX500|SPX|US500USD|SP500USD|SPXUSD|SPX500USD)([._-][A-Z0-9]+)?$/.test(x.name)
-   &&!/\b(STOCK|EQUITY|ETF|FUND|SHARE)\b/i.test(x.type+' '+x.description));
+   &&!/\b(STOCK|EQUITY|ETF|FUND|SHARE)\b/i.test(x.type)&&!/\b(STOCK|ETF|FUND|SHARE)\b/i.test(x.description));
   if(candidates.length){
    const order=['US500','SP500','SPX500','SPX'];
    candidates.sort((a,b)=>{const score=x=>{const k=order.indexOf(x.name);return k<0?10:k};return score(a)-score(b)});
@@ -5571,7 +5571,7 @@ const foldSelector=[
  '.shell #stormCopyTrade > .storm-v96-equity','.shell #stormCopyTrade > .storm-v95-ledger',
  '.shell .tf-switch','.shell .asset-switch','.shell .v6-insight',
  '.shell .v6-modules','.shell .v7-header-grid','.shell .v71-grid',
- '.shell .v90-columns','.shell .storm-v95-title'
+ '.shell .v90-columns','.shell .storm-v95-title','.shell #stormIndicesPane'
 ].join(',');
 function status(){
  const el=$('stormIndexFeed'),select=$('assetSelect');if(!el||!select)return;
@@ -5648,7 +5648,7 @@ function fold(el,collapse){
 }
 function decorate(){
  d.querySelectorAll(foldSelector).forEach((el,i)=>{
-  if(el.dataset.stormFoldReady==='1'||el.tagName==='DETAILS'||el.closest('.storm-folded'))return;
+  if(el.tagName==='DETAILS'||el.closest('.storm-folded')||el.querySelector(':scope > .storm-fold-toggle'))return;
   el.dataset.stormFoldReady='1';el.classList.add('storm-fold-target');
   el.dataset.stormFoldTitle=titleOf(el);
   const k=el.id?el.id:null;
