@@ -150,11 +150,11 @@
   if(!TYPES.includes(product))throw Error('Motor B3 exclusivo do WIN/WDO');
   if(!PERIOD[tf])throw Error('Timeframe B3 não suportado');
   const first=contractFor(product),attempts=[];
-  // Nunca selecionar contrato que passou do último dia permitido.
-  const catalog=await knownSymbols(product,signal);
+  // Priorizar OHLC do contrato calculado: catálogo Biquote pode ficar indisponível.
   const candidate={...first};
   try{return await readSymbol(product,tf,candidate,signal);}
   catch(e){if(signal?.aborted)throw e;attempts.push(first.symbol+': '+e.message);}
+  const catalog=await knownSymbols(product,signal);
   // Não usar qualquer símbolo contínuo. Só pode adiantar para outro contrato
   // listado na Biquote e do MESMO produto, desde que ainda não vencido.
   for(const symbol of catalog){
