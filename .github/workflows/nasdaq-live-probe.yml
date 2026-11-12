@@ -16,4 +16,4 @@ jobs:
         with:
           node-version: '22'
       - name: Probe public Nasdaq symbol, quote timestamps, and OHLC
-        run: node tests/probe-nasdaq-live.cjs
+        run: node tests/ustec-feed-verify.cjs
