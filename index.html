@@ -2507,6 +2507,7 @@ const $=id=>document.getElementById(id),BR='America/Sao_Paulo';
 const fmt=(n,d=2)=>Number.isFinite(n)?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const pct=n=>Math.round(n)+'%',clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeNewsUrl=raw=>{try{const u=new URL(String(raw||''));return ['https:','http:'].includes(u.protocol)?safe(u.href):'#'}catch{return '#'}};
 const forexDigits=()=>selectedAsset==='WIN'?0:selectedAsset==='WDO'?1:selectedAsset==='USDJPY'?3:['EURUSD','USDCAD','USDCHF','AUDUSD'].includes(selectedAsset)?5:2;
 const quoteCurrency=()=>({USDJPY:'JPY',USDCAD:'CAD',USDCHF:'CHF',EURUSD:'USD',AUDUSD:'USD',BTCUSDT:'USDT',WIN:'BRL',WDO:'BRL'}[selectedAsset]||'USD');
 const fmtAsset=n=>fmt(n,forexDigits());
@@ -2978,7 +2979,7 @@ function renderZones(){const z=state.analysis?.zones||[];$('zones').innerHTML=z.
 function renderNews(){const list=$('news');if(!list)return;const items=state.news;
  $('newsState').textContent=state.newsError?'Falha na consulta':state.newsReady?items.length+' notícia(s)':'Aguardando fonte';
  if(state.newsError){list.innerHTML='<div class="empty">'+safe(state.newsError)+'<br><small>Notícias não foram inventadas e não entram no sinal.</small></div>';return;}
- list.innerHTML=items.length?items.slice(0,5).map(n=>`<div class="news-item"><a target="_blank" rel="noopener noreferrer" href="${safe(n.url)}">${safe(n.title)}</a><div class="news-top"><small>${safe(n.source)} · ${fmtBR(n.dt,true)}</small>${n.highImpact?'<span>⚠ Atenção macro</span>':''}</div></div>`).join(''):'<div class="empty">Nenhuma notícia correspondente retornada pela fonte nas últimas 48 horas.</div>';}
+ list.innerHTML=items.length?items.slice(0,5).map(n=>`<div class="news-item"><a target="_blank" rel="noopener noreferrer" href="${safeNewsUrl(n.url)}">${safe(n.title)}</a><div class="news-top"><small>${safe(n.source)} · ${fmtBR(n.dt,true)}</small>${n.highImpact?'<span>⚠ Atenção macro</span>':''}</div></div>`).join(''):'<div class="empty">Nenhuma notícia correspondente retornada pela fonte nas últimas 48 horas.</div>';}
 function renderHistory(){if(window.Vortex79History?.render){window.Vortex79History.render();return;}const cur=state.signalHistory.filter(h=>h.mode===state.mode);$('historyCount').textContent=cur.length+' candles analisados';$('history').innerHTML=cur.length?cur.slice(0,40).map(h=>`<div class="history-item"><div class="history-top"><b class="${h.side==='buy'?'green':'red'}">${h.side==='buy'?'↑ COMPRA':'↓ VENDA'} · ${h.score}%</b><small>${safe(h.tf||selectedTF)} · ${fmtBR(h.t+(TF[h.tf||selectedTF]||INTERVAL),true)}</small></div><div class="history-detail"><span>Entrada ${fmtAsset(h.price)}</span><span>${h.side==='buy'?'+':'−'}${deltaFmt(h.target)} · ${h.horizon||3} velas</span><span class="${h.status==='win'?'green':h.status==='loss'?'red':''}">${({win:'ALVO',loss:'STOP',expired:'EXPIRADO',unknown:'INDEFINIDO',pending:'PENDENTE'})[h.status]||'IMPORTADO'}</span></div></div>`).join(''):'<div class="empty">Somente sinais com projeção acima de US$ 3,00 em uma vela são registrados para XAUUSD.</div>';}
 
 // v6: resolve only candles occurring strictly after a recorded signal; never count imports as real-world live performance.
