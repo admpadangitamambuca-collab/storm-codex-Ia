@@ -26,17 +26,14 @@ jobs:
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-          node --test tests/v112-smoke.test.js
+          node --test tests/v112-smoke.test.js tests/v113-nasdaq-live.test.js
       - name: Validate standalone package generated from current main
         run: |
           mkdir -p dist/smoke
-          mkdir -p dist/smoke/netlify/functions
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js dist/smoke/
-          cp netlify/functions/nasdaq-ohlc.js dist/smoke/netlify/functions/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-live-v113.js storm-precision-v112.js dist/smoke/
           (cd dist/smoke && zip -q -r ../storm-smoke.zip .)
           unzip -t dist/storm-smoke.zip
           unzip -p dist/storm-smoke.zip index.html | cmp - index.html
           unzip -p dist/storm-smoke.zip sw.js | cmp - sw.js
-          unzip -p dist/storm-smoke.zip storm-nasdaq-v112.js | cmp - storm-nasdaq-v112.js
+          unzip -p dist/storm-smoke.zip storm-nasdaq-live-v113.js | cmp - storm-nasdaq-live-v113.js
           unzip -p dist/storm-smoke.zip storm-precision-v112.js | cmp - storm-precision-v112.js
-          unzip -p dist/storm-smoke.zip netlify/functions/nasdaq-ohlc.js | cmp - netlify/functions/nasdaq-ohlc.js
