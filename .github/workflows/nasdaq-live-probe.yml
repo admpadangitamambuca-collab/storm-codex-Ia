@@ -1,0 +1,19 @@
+name: Probe NAS100 live public data
+on:
+  push:
+    branches:
+      - feature/nasdaq-live-source-probe-v113-20261112
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe public Nasdaq symbol, quote timestamps, and OHLC
+        run: node tests/probe-nasdaq-live.cjs
