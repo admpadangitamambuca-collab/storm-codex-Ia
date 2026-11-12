@@ -2659,7 +2659,7 @@ function ctxB3(asset){return asset==='WIN'||asset==='WDO'}
 function computeSnapshot(candles,mode,extra={}){
  const e9=ema(candles,9),e21=ema(candles,21),aa=atr(candles),tf=extra.tf||selectedTF,context={e9,e21,aa,rsi:V6().rsi(candles),adx:V72().adx(candles),tf,asset:extra.asset||selectedAsset,mode,spread:mode==='live'?v6Settings.spread:0,slippage:mode==='live'?v6Settings.slippage:0,commission:mode==='live'?v6Settings.commission:0,lot:v6Settings.lot,multiplier:v6Settings.multiplier};
  const isB3=ctxB3(context.asset);
- const b3Analysis=isB3?window.StormB3Indices111?.analyze?.(candles,tf,{...extra,asset:context.asset}):null;
+ const b3Analysis=isB3?window.StormB3Indices111?.analyze?.(candles,tf,{...extra,mode,asset:context.asset}):null;
  if(isB3&&!b3Analysis)throw Error('Motor B3 não carregado');
  let legacyAnalysis=b3Analysis||evaluate(candles,candles.length-1,context);
  if(!isB3&&mode==='live'&&!legacyAnalysis.preliminary&&['buy','sell'].includes(legacyAnalysis.side)){const adap=V71().relearn(getHistory(extra.asset,tf),{asset:extra.asset,tf,side:legacyAnalysis.side,regime:legacyAnalysis.regime,closedAt:candles.at(-1).t+TF[tf],rawScore:legacyAnalysis.score});legacyAnalysis={...legacyAnalysis,score:adap.score,adaptive:adap};}
@@ -2886,7 +2886,18 @@ async function fetchNews(){const newsFor=selectedAsset;
  finally{clearTimeout(timer)}renderNews();renderV7();updateNotice();
 }
 
-function renderAll(){updateNotice();renderKpis();renderSignal();renderFactors();renderZones();renderHistory();renderNews();renderOverview();renderV6();renderV7();chart();window.SGClassicPrecision93?.render?.({analysis:state.analysis,asset:selectedAsset,tf:selectedTF,mode:state.mode,source:state.source});window.dispatchEvent(new Event("vortex83-data"));}
+function renderAll(){updateNotice();renderKpis();renderSignal();renderFactors();renderZones();renderHistory();renderNews();renderOverview();renderV6();renderV7();chart();
+ if(ctxB3(selectedAsset)){
+  const el=document.getElementById('v93ClassicReadout');
+  if(el){el.textContent='';const head=document.createElement('div');head.className='v93-head';
+   const group=document.createElement('div');const label=document.createElement('small');label.textContent='MOTOR B3 INDEPENDENTE · v11.1';
+   const title=document.createElement('h2');title.textContent=(selectedAsset==='WIN'?'Mini índice':'Mini dólar')+' · '+(state.feedSymbol||'aguardando ticker');
+   group.append(label,title);head.append(group);
+   const note=document.createElement('p');note.className='v93-foot';note.textContent='EMA 9/21 · ATR · VWAP estimada · rompimento e volatilidade. Contrato e pregão validados pela fonte. Score técnico não é probabilidade de lucro.';
+   el.append(head,note);
+  }
+ }else window.SGClassicPrecision93?.render?.({analysis:state.analysis,asset:selectedAsset,tf:selectedTF,mode:state.mode,source:state.source});
+ window.dispatchEvent(new Event('vortex83-data'));}
 function updateSignalFreshness(){
  const s=SYNC().describe(Date.now(),state.closedAt,INTERVAL),el=$('signalFreshness'),live=state.mode==='live';
  const delayed=live&&(s.late||state.providerStale);el.className='signal-freshness '+(delayed?'is-late':live?'is-live':'');
