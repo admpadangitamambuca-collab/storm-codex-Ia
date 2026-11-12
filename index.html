@@ -3788,7 +3788,11 @@ function planFor(data,struct,macro){const a=data?.state?.analysis,asset=data?.as
  const estimatedNetRR=hasLevels?Math.max(0,baseTarget-perUnit)/(stopDist+perUnit):null;
  const mtf=Object.keys(FRAMES).map(t=>{
   const s=data?.snapshots?.[t],fresh=s?.mode==='live'&&s?.candles?.length&&!(s?.providerStale)&&finite(s.closedAt)&&finite(data?.state?.closedAt)&&s.closedAt<=data.state.closedAt&&Date.now()-s.closedAt<FRAMES[t]*2+45000;
-  return {tf:t,side:s?.analysis?.side||'wait',fresh:!!fresh,score:finite(s?.analysis?.score)?s.analysis.score:null};
+  // Turbo Gold usa direção independente do gate de US$4 do Clássico também no MTF.
+  const turboSide=asset==='XAUUSD'?(s?.analysis?.turboBase?.side||s?.analysis?.candidateSide||s?.analysis?.side):s?.analysis?.side;
+  return {tf:t,side:turboSide||'wait',fresh:!!fresh,
+   score:asset==='XAUUSD'&&finite(s?.analysis?.turboBase?.score)?s.analysis.turboBase.score:
+    finite(s?.analysis?.score)?s.analysis.score:null};
  });
  const aligned=mtf.filter(x=>x.fresh&&x.side===side).length,available=mtf.filter(x=>x.fresh).length;
  const blocked=[];
