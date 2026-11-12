@@ -20,10 +20,10 @@ function yahooResponse(symbol='^NDX',tf='M5',raw=null){
    volume:bars.map(()=>null)}]}}]}};
 }
 test('Yahoo ^NDX M1/M5/M15/H1: somente fechados e sem autenticação',async()=>{
- for(const tf of Object.keys(yahoo.FRAME)){
+ for(const tf of ['M1','M5','M15','H1']){
   const value=await yahoo.pull(tf,async()=>({ok:true,json:async()=>yahooResponse('^NDX',tf)}));
   assert.equal(value.feedSymbol,'^NDX');assert.ok(value.candles.length>=60);
-  assert.ok(value.candles.every(b=>b.t+yahoo.FRAME[tf].ms<=Date.now()));
+  assert.ok(value.candles.every(b=>b.t+({M1:60000,M5:300000,M15:900000,H1:3600000}[tf])<=Date.now()));
   assert.equal(value.feedVerified,true);
  }
 });
