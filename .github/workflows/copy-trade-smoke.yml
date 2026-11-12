@@ -21,8 +21,15 @@ jobs:
           node-version: '22'
       - name: Validate JS and Copy Trade simulated operations
         run: node tests/copy-trade-smoke.cjs
-      - name: Validate standalone Netlify package and exact app contents
+      - name: Validate EURUSD/XAUUSD and manual-refresh regressions
         run: |
-          unzip -t Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip
-          unzip -p Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip index.html | cmp - index.html
-          unzip -p Storm_Codex_IA_v10_3_1_COPY_TRADE_NETLIFY.zip sw.js | cmp - sw.js
+          node tests/manual_refresh_regression.cjs
+          node tests/asset-specialist-regression.cjs
+      - name: Validate standalone package generated from current main
+        run: |
+          mkdir -p dist/smoke
+          cp index.html sw.js dist/smoke/
+          (cd dist/smoke && zip -q ../storm-smoke.zip index.html sw.js)
+          unzip -t dist/storm-smoke.zip
+          unzip -p dist/storm-smoke.zip index.html | cmp - index.html
+          unzip -p dist/storm-smoke.zip sw.js | cmp - sw.js
