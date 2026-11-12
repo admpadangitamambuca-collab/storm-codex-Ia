@@ -2710,9 +2710,9 @@ async function loadTF(asset,tf,jobEpoch=epoch,manual=false){
   const newClose=result.closedAt,unchanged=prior?.mode==='live'&&prior.closedAt===newClose&&
     prior.candles?.at(-1)?.close===result.candles.at(-1).close&&prior.candles?.at(-1)?.open===result.candles.at(-1).open&&prior.candles?.at(-1)?.high===result.candles.at(-1).high&&prior.candles?.at(-1)?.low===result.candles.at(-1).low;
   // Don't perform costly replay/calibration on a provider response repeating an old candle.
-  if(unchanged&&!manual){const same={...prior,lastAttempt:Date.now(),lastFetch:Date.now(),fetchedAt:result.fetchedAt,requestMs:result.requestMs,
+  if(unchanged&&!manual){const same={...prior,lastAttempt:Date.now(),lastFetch:Date.now(),fetchedAt:result.fetchedAt,requestMs:result.requestMs,feedSymbol:result.feedSymbol,feedVerified:Boolean(result.feedVerified),feedAlias:Boolean(result.feedAlias),
     providerStale:result.providerStale,providerTimestamp:result.providerTimestamp,transport:result.transport||prior.transport,error:''};
-    snapshots.set(key,same);if(tf===selectedTF){state.lastFetch=same.fetchedAt;state.requestMs=same.requestMs;state.providerStale=same.providerStale;state.providerTimestamp=same.providerTimestamp;
+    snapshots.set(key,same);if(tf===selectedTF){state.lastFetch=same.fetchedAt;state.requestMs=same.requestMs;state.feedSymbol=same.feedSymbol;state.feedVerified=same.feedVerified;state.feedAlias=same.feedAlias;state.providerStale=same.providerStale;state.providerTimestamp=same.providerTimestamp;
       updateSyncReadout();updateNotice();}else renderOverview();
     if(manual&&tf===selectedTF)toast('A fonte ainda não entregou uma vela nova. Nenhum sinal foi inventado.');return;}
   // Refresh manual always recomputes indicators, even if OHLC is identical.
