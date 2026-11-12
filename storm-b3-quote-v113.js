@@ -33,6 +33,9 @@
   let errors=[];
   try{return verify(await get('/.netlify/functions/b3-quote?symbol='+symbol),symbol)}catch(e){errors.push('Netlify: '+e.message)}
   try{return decodeDirect(await get(url+symbol),symbol)}catch(e){errors.push('Brapi: '+e.message)}
+  const curve='https://brapi.dev/api/v2/futures/term-structure?asset='+symbol.slice(0,3);
+  try{return {...decodeDirect({quotes:(await get(curve))?.contracts},symbol),source:'brapi.dev curva de vencimentos · EOD'}}
+  catch(e){errors.push('Curva EOD: '+e.message)}
   try{return {...decodeDirect(await get('https://proxy.cors.dev/'+url+symbol),symbol),source:'brapi.dev via proxy cors.dev (terceiros)'}}
   catch(e){errors.push('Proxy: '+e.message)}
   throw Error(errors.join(' | ').slice(0,300));
