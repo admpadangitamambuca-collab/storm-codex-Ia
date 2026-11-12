@@ -1,3 +1,54 @@
+# Storm Códex IA v11.1 — WIN e WDO integrados ao modo Índices (12/11/2026)
+
+## Motor brasileiro de minicontratos
+
+- Novos ativos **WIN (mini índice)** e **WDO (mini dólar)**, exclusivos dos botões do modo Índices. Nenhum dos dois foi adicionado ao Copy Trade.
+- Motor B3 independente de Clássico e Turbo: EMA 9/21, rompimento da faixa recente, ATR 14, razão de volatilidade, posição de fechamento, inclinação do preço e VWAP estimada de candles. Score /100 é técnico, não probabilidade estatística calibrada.
+- WIN: R$ 0,20 por ponto e ticks de 5 pontos. WDO: R$ 10 por ponto e ticks de 0,5 ponto, por minicontrato. Quantidade mínima visual para estudo: 1 contrato.
+- Fonte de consulta sem chave/login: **Biquote REST**, catálogo público de símbolos e OHLC M1/M5/M15/H1. O provedor precisa realmente oferecer o ticker B3 exato (ex.: WINZ26 e WDOZ26). O sistema verifica ticker, série de vencimento, OHLC, candles fechados e defasagem. **Se a fonte não disponibilizar WIN/WDO intradiários, o motor não emitirá sinais e exibirá diagnóstico.** Não mistura Ibovespa spot com WIN nem USD/BRL spot com WDO.
+- Seleção por calendário B3: WIN vence nos meses pares na quarta-feira mais próxima de 15 (ou sessão seguinte); WDO vence no primeiro dia útil do mês, com último pregão na sessão anterior. Não há contrato novo todo dia. A aplicação verifica mudança do contrato esperado a cada 20 segundos enquanto a aba Índices estiver ativa e manda atualizar as leituras.
+- Dias úteis incluem finais de semana e principais feriados B3 recorrentes; calendário extraordinário deve ser conferido com a bolsa e com o catálogo do provedor. Disponibilidade de contrato e liquidez não podem ser presumidas.
+- Memória adaptativa distingue o ticker vigente de contratos anteriores na calibração B3; acompanha resultados pendentes com os mesmos dados públicos, quando disponíveis. Sem backfill inventado, sem ordens reais.
+- **Teste com resposta real do provedor não foi possível neste ambiente.** Antes de usar sinais, valide a disponibilidade efetiva de WIN/WDO no painel e confirme cotações na corretora.
+
+Fontes B3 (regras): https://www.b3.com.br/pt_br/produtos-e-servicos/negociacao/renda-variavel/mercado-de-acoes/futuro-de-ibovespa.htm e https://b3.com.br/pt_br/produtos-e-servicos/negociacao/moedas/futuro-mini-de-taxa-de-cambio-de-reais-por-dolar-comercial.htm
+
+## Publicação completa
+
+A versão exige publicar **todos os arquivos** do diretório raiz, incluindo `index.html`, `b3-indices-v111.js`, `learning-v108.js` e `sw.js`. O código foi preparado para ser integrado à ramificação principal `main`, não como patch isolado. O Netlify estático não executa Javascript enquanto a aba estiver fechada.
+
+---
+
+# Storm Códex IA v11.0 — NAS100 corrigido e memória adaptativa em todos os ativos (12/11/2026)
+
+## NAS100 / Nasdaq-100
+
+- Primeiro consulta `https://biquote.io/api/NAS100/ohlc` no período selecionado.
+- Caso não haja candles reais válidos, consulta o catálogo `/api/symbols/search` e verifica aliases estritamente relacionados ao Nasdaq-100 (`US100`, `USTEC`, `NASDAQ100`, `NDX`, ou códigos explicitamente identificados), sem ações/ETFs ou ativos não relacionados.
+- O símbolo real confirmado aparece no painel e na ponte de leitura; sem feed verificável, sinal é bloqueado e há diagnóstico do erro.
+- Dados defasados, mercado fechado, falhas HTTP e candles abertos são sinalizados, não geram operações fictícias.
+- Não foi possível validar a cotação NAS100 ao vivo nesta sessão. Testar diretamente no Netlify com rede e mercado disponíveis antes de publicar na principal.
+
+## Memória adaptativa — todos os mercados
+
+Ativos: `XAUUSD`, `BTCUSD`, `BTCUSDT`, `EURUSD`, `USDJPY`, `USDCAD`, `USDCHF`, `AUDUSD`, `NASDAQ`, `SP500`.
+
+- Memória individual por **ativo + timeframe + motor**: Clássico para metais/Forex/Bitcoin; Índices para Nasdaq/S&P 500; Turbo para análises em que o motor Turbo efetivamente emite leituras.
+- Apenas sinais novos observados prospectivamente com confluência **estritamente maior que 78/100**, OHLC público e entrada/stop/alvo válidos.
+- Captura resultados mesmo quando há outras leituras pendentes, mas **desconta a dependência estatística de sinais sobrepostos** na calibração.
+- Motor de aprendizado em camadas: características de preço/volatilidade/sessão, taxa de acertos observada, retorno em R, confiança Wilson, regularização por recência, detecção de deterioração e validação cronológica 70/30 com embargo.
+- Ajuste conservador: até +3 ou −4 pontos do score apenas após amostra independente suficiente. Score heurístico não é chance garantida de lucro.
+- Reconciliador de resultados pendentes: enquanto a aba estiver aberta/visível, revisa até seis conjuntos por ciclo de 95 segundos usando os feeds existentes, inclusive de outros ativos e períodos. **Não cria sinais retrospectivos nem aprende novos sinais quando o app está fechado.**
+- Painel mostra memória dos dez ativos e permite backup JSON/restauração manual. Histórico anterior v10.8 é preservado; não transfere automaticamente entre aparelhos.
+- Copy Trade fictício mantém regra anterior do Turbo, exigindo score **>83/100** para entrada, sem ordens reais.
+- Testes estáticos de sintaxe dos scripts e testes unitários sintéticos aprovados. Não é validação de desempenho financeiro e não comprova disponibilidade do NAS100 ao vivo.
+
+## Deploy
+
+Baixe o ZIP da ramificação `feature/indices-live-and-adaptive-memory-v110-20261112` e publique o conteúdo inteiro no Netlify, mantendo `index.html`, `learning-v108.js`, `sw.js` e demais arquivos da raiz juntos. Se houver cache no navegador, faça recarga forçada; nunca publique apenas o HTML.
+
+---
+
 # Storm Códex IA v10.8 — Aprendizado por resultados prospectivos (12/11/2026)
 
 - Os três motores **Clássico, Índices (Nasdaq-100 e S&P 500) e Turbo** passam a avaliar um histórico local isolado por motor, ativo e timeframe. Um resultado não contamina outro.
