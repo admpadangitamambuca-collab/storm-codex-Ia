@@ -1,4 +1,4 @@
-name: Publish Netlify ZIP v11.2 (audited)
+name: Publish Netlify ZIP v11.3 (audited)
 on:
   push:
     branches: [main]
@@ -7,9 +7,9 @@ on:
       - sw.js
       - learning-v108.js
       - b3-indices-v111.js
-      - storm-nasdaq-v112.js
+      - storm-nasdaq-live-v113.js
       - storm-precision-v112.js
-      - netlify/functions/nasdaq-ohlc.js
+
       - tests/**
       - README.md
       - .github/workflows/netlify-package.yml
@@ -32,30 +32,30 @@ jobs:
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-          node --test tests/v112-smoke.test.js
+          node --test tests/v112-smoke.test.js tests/v113-nasdaq-live.test.js
           node --check b3-indices-v111.js
-          node --check storm-nasdaq-v112.js
+          node --check storm-nasdaq-live-v113.js
           node --check storm-precision-v112.js
           node --check learning-v108.js
-          node --check netlify/functions/nasdaq-ohlc.js
-      - name: Create complete v11.2 Netlify source ZIP
+
+      - name: Create complete v11.3 Netlify source ZIP
         shell: bash
         run: |
-          mkdir -p dist/netlify/netlify/functions
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js dist/netlify/
-          cp netlify/functions/nasdaq-ohlc.js dist/netlify/netlify/functions/
+
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-live-v113.js storm-precision-v112.js dist/netlify/
+          cp  dist/netlify/netlify/functions/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
-          STORM CODEX IA 11.2 - AUDITORIA DE PACOTE
-          Este ZIP contem HTML, todos os JS externos e a funcao Netlify Nasdaq.
-          Deploy recomendado: conectar repositorio GitHub no Netlify para publicar funcoes.
-          Netlify Drop/ZIP estatico normalmente NAO executa Netlify Functions.
-          Modo estatico tenta proxy publico cors.dev para Yahoo ^NDX, sem garantia/SLA.
-          Nasdaq Yahoo ^NDX pode ter atraso e seus sinais sao bloqueados quando stale.
+          STORM CODEX IA 11.3 - AUDITORIA DE PACOTE
+          Este ZIP contem index.html e todos os JS ativos da versao.
+          Deploy: Netlify Drop ou GitHub. O USTEC usa Biquote REST/SignalR publicos.
+          Nao requer funcao Netlify, chave ou login para o feed Nasdaq.
+          USTEC e CFD US Tech 100, nao e o indice oficial ^NDX.
+          Somente candle fechado e tick fresco liberam analise operacional; sem fallback Yahoo.
           XAU Classico: movimento minimo US$4 em uma vela.
           XAU Turbo: analise independente com ATR/estrutura, inclusive alvos menores.
           Copy Trade: somente SIMULADO; Turbo >83 e OHLC/risco validos.
           Memoria somente local/prospectiva quando navegador estiver aberto.
-          Fonte de mercado nao foi testada ao vivo pelo teste unitario.
+          Feed USTEC M1/M5/M15/H1 foi observado em execucao de diagnostico; novas sessoes nao sao garantidas.
           EOF
           python3 - <<'PY'
           from pathlib import Path
@@ -68,26 +68,26 @@ jobs:
           print('JS local:',local)
           if missing: raise SystemExit('Pacote incompleto: '+', '.join(missing))
           required=['index.html','sw.js','learning-v108.js','b3-indices-v111.js',
-                    'storm-nasdaq-v112.js','storm-precision-v112.js','netlify/functions/nasdaq-ohlc.js']
+                    'storm-nasdaq-live-v113.js','storm-precision-v112.js']
           for rel in required:
               if not (d/rel).is_file(): raise SystemExit('Arquivo ausente: '+rel)
           PY
-          (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip .)
-          unzip -t dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
-          unzip -l dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
+          (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_3_AUDITADA_NETLIFY.zip .)
+          unzip -t dist/Storm_Codex_IA_v11_3_AUDITADA_NETLIFY.zip
+          unzip -l dist/Storm_Codex_IA_v11_3_AUDITADA_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v11_2_AUDITADA_NETLIFY
-          path: dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
+          name: Storm_Codex_IA_v11_3_AUDITADA_NETLIFY
+          path: dist/Storm_Codex_IA_v11_3_AUDITADA_NETLIFY.zip
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v11_2_AUDITADA_NETLIFY.zip
-          if gh release view v11.2-audit >/dev/null 2>&1; then
-            gh release upload v11.2-audit "$FILE" --clobber
+          FILE=dist/Storm_Codex_IA_v11_3_AUDITADA_NETLIFY.zip
+          if gh release view v11.3-audit >/dev/null 2>&1; then
+            gh release upload v11.3-audit "$FILE" --clobber
           else
-            gh release create v11.2-audit "$FILE" --target "$GITHUB_SHA" \
-              --title "Storm Codex IA 11.2 - pacote auditado" \
-              --notes "Inclui todas as dependencias da v11.2. Publicacao por Git conecta Netlify Functions; ZIP estatico usa proxy publico sem garantia. Sem dados ao vivo nos testes."
+            gh release create v11.3-audit "$FILE" --target "$GITHUB_SHA" \
+              --title "Storm Codex IA 11.3 - pacote auditado" \
+              --notes "Inclui todas as dependencias da v11.3. Nasdaq USTEC CFD usa Biquote REST e SignalR gratuitos; quatro timeframes observados no pregão. Feed pode falhar fora do pregão; sinais dependem de vela fechada e tick recente."
           fi
