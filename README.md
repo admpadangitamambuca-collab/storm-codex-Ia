@@ -1,3 +1,11 @@
+# Storm Códex IA v10.5 (12/11/2026)
+
+Correção Copy Trade: continua usando Turbo estritamente >83/100 e candles OHLC reais fechados; não consome fechamento quando faltam níveis técnicos recuperáveis, permite reconsulta manual imediata e não duplica operações. Se o Turbo não trouxer stop/alvo mas houver direção legítima, estima níveis por ATR14 e extremos de oito velas *somente na simulação*.
+
+Camadas específicas EURUSD (sessões UTC aproximadas, faixa asiática, EMA20/50, ATR em pips, falsos rompimentos) e XAUUSD (ATR em US$/oz, rejeições, faixa asiática, volatilidade). Peso de -4 a +4 pontos no score Turbo, visível em análise detalhada, sem garantia de acerto e sem afirmar acesso a DXY ou ordens institucionais.
+
+O Copy exige a página aberta e ativa, e a fonte Biquote pode falhar. Testes automáticos não comprovam funcionamento end-to-end na Netlify.
+
 # Storm Códex IA — código-fonte completo e versionado
 
 ## Versão 10.4.1 — Monitor Copy Trade revisado (11/11/2026)

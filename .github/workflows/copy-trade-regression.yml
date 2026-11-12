@@ -15,4 +15,7 @@ jobs:
         with:
           node-version: '22'
       - name: Regression tests (27 inline scripts, Copy monitor)
-        run: node tests/copy-trade-smoke.cjs
+        run: |
+          node tests/copy-trade-smoke.cjs
+          node tests/manual_refresh_regression.cjs
+          node tests/asset-specialist-regression.cjs
