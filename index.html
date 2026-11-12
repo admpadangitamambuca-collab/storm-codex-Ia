@@ -4763,7 +4763,7 @@ async function scanRadar(tf){if(!active||radarRunning)return;radarRunning=true;r
  let index=0;const next=async()=>{while(index<ASSETS.length&&!controller.signal.aborted){const asset=ASSETS[index++];radar.set(asset,{asset,tf,status:'loading'});renderRadar();
  try{let response=null;const existing=getContext();if(existing?.data.asset===asset&&existing?.data.tf===tf&&existing.data.state?.mode==='live'){
   response={candles:existing.data.state.candles,source:existing.data.state.source,providerStale:existing.data.state.providerStale};
- }else{if(!window.SGV78Data?.load)throw Error('Fonte SGV78Data indisponível');response=await window.SGV78Data.load(asset,tf,controller.signal)}
+ }else{if(asset==='NASDAQ'){if(!window.StormNasdaq112?.load)throw Error('Fonte Nasdaq ^NDX indisponível');response=await window.StormNasdaq112.load(tf,controller.signal)}else{if(!window.SGV78Data?.load)throw Error('Fonte SGV78Data indisponível');response=await window.SGV78Data.load(asset,tf,controller.signal)}}
  if(controller.signal.aborted)return;radar.set(asset,radarAnalyze(response.candles,asset,tf,response));
  }catch(e){if(controller.signal.aborted)return;radar.set(asset,{asset,tf,status:'error',error:String(e?.message||'Fonte indisponível').slice(0,120)});}
  radarCount++;renderRadar();}}
