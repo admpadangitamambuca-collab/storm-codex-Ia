@@ -5731,17 +5731,17 @@ function status(){
  const b3=asset==='WIN'||asset==='WDO';
  const desired=b3?window.StormB3Indices111?.contractFor?.(asset):null;
  const expected=b3?(desired?.symbol||asset):asset==='NASDAQ'?'NAS100':'S&P 500';
- const identified=b3?state?.feedVerified&&source===expected:asset==='NASDAQ'
+ const identified=b3?state?.feedVerified&&source.startsWith(asset)&&source.length===6:asset==='NASDAQ'
   ?state?.feedVerified&&/^(NAS100(?:[._-]CFD)?|US100(?:[._-]CFD)?|USTEC(?:[._-]CFD)?|NASDAQ100|NDX)$/.test(source)
   :/^(US500|SP500|SPX500|SPX|US500USD|SP500USD|SPXUSD|SPX500USD)([._-][A-Z0-9]+)?$/.test(source);
- const valid=n>=2&&state?.mode==='live'&&!state?.providerStale&&identified;
+ const valid=n>=46&&state?.mode==='live'&&!state?.providerStale&&identified;
  const stale=n>=2&&state?.mode==='live'&&state?.providerStale;
  const timestamp=Number(state?.closedAt)||0;
  const when=timestamp?new Date(timestamp).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
  const analysis=state?.classicAnalysis||state?.analysis;
  const score=Number(analysis?.score);
  setText('stormIndexSymbol',source||expected);
- setText('stormIndexSymbolHint',b3?'B3 · '+(asset==='WIN'?'R$0,20':'R$10')+'/ponto':asset==='NASDAQ'?(source&&source!=='NAS100'?'Nasdaq-100 verificado · NAS100 indisponível':'Ticker preferencial NAS100 · Biquote'):'Identificação validada pela Biquote');
+ setText('stormIndexSymbolHint',b3?'B3 · '+(asset==='WIN'?'R$0,20':'R$10')+'/ponto · último pregão '+(desired?.lastTrade?String(desired.lastTrade.d).padStart(2,'0')+'/'+String(desired.lastTrade.m).padStart(2,'0'):'a confirmar'):asset==='NASDAQ'?(source&&source!=='NAS100'?'Nasdaq-100 verificado · NAS100 indisponível':'Ticker preferencial NAS100 · Biquote'):'Identificação validada pela Biquote');
  setText('stormIndexTimeframe',tf);
  setText('stormIndexBars',n?String(n)+' candles fechados':'Aguardando OHLC');
  setText('stormIndexScore',valid&&Number.isFinite(score)?Math.round(Math.min(100,Math.max(0,score)))+'/100':'—');
@@ -5832,7 +5832,7 @@ function makeIndices(){
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)status()});
  setInterval(()=>{if(document.hidden||!indicesOn)return;const asset=$('assetSelect')?.value;
   if(asset==='WIN'||asset==='WDO'){
-   const next=window.StormB3Indices111?.contractFor?.(asset)?.symbol;
+   let next=null;try{next=window.StormB3Indices111?.contractFor?.(asset)?.symbol}catch(e){}
    if(next&&expectedB3[asset]&&expectedB3[asset]!==next)$('refreshAll')?.click();
    if(next)expectedB3[asset]=next;
   }
