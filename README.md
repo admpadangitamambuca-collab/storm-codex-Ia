@@ -1,3 +1,24 @@
+# Storm Códex IA 11.3 — auditoria e B3 WIN/WDO (12/11/2026)
+
+## O que foi efetivamente corrigido
+- **Pacote Netlify completo:** a automação antiga ainda gerava ZIP 10.8 só com `index.html`, `sw.js` e `learning-v108.js`. A nova rotina testa e inclui B3, Nasdaq, Precision, memória, serviço de cotações, `netlify.toml` e as funções serverless.
+- **Preços de referência WIN/WDO:** novo painel na aba Índices com código do vencimento calculado e último fechamento/ajuste fornecido pela brapi (`/api/v2/futures/quote`), fallback para `/term-structure`. O site Netlify pode usar a function `b3-quote`; o ZIP estático tenta a fonte pública.
+- **Eficiência do feed intradiário:** Biquote tenta primeiro o ticker exato do contrato vigente e só depois consulta o catálogo de símbolos. Não muda nem enfraquece a validação OHLC.
+- **Versões consolidadas:** Clássico, Turbo, Nasdaq `^NDX`, S&P500, WIN/WDO, Copy Trade fictício, memória adaptativa e layout premium preservados.
+
+## Limitação de mercado — tempo real
+**Não foi identificada uma API WIN/WDO legalmente redistribuível, gratuita, pública, sem login e comprovadamente em tempo real.** A B3 licencia feeds em tempo real; os widgets gratuitos do TradingView fornecem normalmente dados com 15 minutos de atraso. A brapi gratuita para WIN/WDO publica **D-1/fim de pregão**, não candles M1/M5/M15/H1 de execução. Ninguém deve usar esse preço diário como sinal de scalp.
+
+O motor WIN/WDO continuará habilitado **somente se** um provedor intradiário real entregar candles do contrato correto, com data/fechamento e atualidade verificáveis. Caso contrário, a tela mostra diagnóstico `AGUARDANDO FEED`, além da referência diária separada. **Esta versão não resolve a exigência de feed B3 ao vivo sem login.**
+
+## Implantação
+Conecte o GitHub ao Netlify para ativar `netlify/functions/nasdaq-ohlc.js` e `netlify/functions/b3-quote.js`. Netlify Drop pode entregar o site estático, mas não instalar as Functions da mesma forma. Todos os arquivos da raiz precisam ser publicados juntos.
+
+## Auditoria
+Relatório detalhado: [AUDITORIA_V11_3.md](AUDITORIA_V11_3.md). Testes automatizados: `node --test tests/v112-smoke.test.js tests/v113-audit.test.js` e regressões legadas.
+
+---
+
 # Storm Códex IA v11.2 — Nasdaq Yahoo ^NDX + Precision Clássico/Turbo (12/11/2026)
 
 ## Nova fonte exclusiva do Nasdaq-100
