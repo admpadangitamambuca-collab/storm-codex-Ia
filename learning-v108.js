@@ -87,8 +87,8 @@
    if(contract&&r.contract&&r.contract!==contract){
     r.status='incomplete';r.reason='Rolagem '+r.contract+' → '+contract+': desfecho não verificável';modified=true;continue;
    }
-   if(contract&&['WIN','WDO'].includes(r.asset)&&!r.contract){
-    r.status='incomplete';r.reason='Registro B3 sem ticker do contrato';modified=true;continue;
+   if(contract&&['NASDAQ','WIN','WDO'].includes(r.asset)&&!r.contract){
+    r.status='incomplete';r.reason='Registro sem identificação da fonte/contrato; liquidação cruzada bloqueada';modified=true;continue;
    }
    const idx=map.get(r.t);
    if(idx===undefined){
@@ -323,8 +323,8 @@
   try{
    await Promise.all(unique.map(async ({asset,tf})=>{
     try{
-     const data=asset==='NASDAQ'&&root.StormNasdaq112?.load
-       ?await root.StormNasdaq112.load(tf,null)
+     const data=asset==='NASDAQ'&&root.StormNasdaqLive113?.load
+       ?await root.StormNasdaqLive113.load(tf,null)
        :(asset==='WIN'||asset==='WDO')&&root.StormB3Indices111?.load
        ?await root.StormB3Indices111.load(asset,tf,null)
        :asset==='XAUUSD'&&tf==='H1'&&root.SGV931H1Recovery?.load
@@ -337,7 +337,7 @@
       const rows=rowsOf(engine,asset,tf);
       if(!rows.some(r=>r.status==='pending'))continue;
       const previous=rows.filter(r=>r.status==='pending').length;
-      if(settle(rows,data.candles,tf,['WIN','WDO'].includes(asset)?data.feedSymbol:null)){
+      if(settle(rows,data.candles,tf,['NASDAQ','WIN','WDO'].includes(asset)?data.feedSymbol:null)){
        const remaining=rows.filter(r=>r.status==='pending').length;
        resolved+=Math.max(0,previous-remaining);
        save(engine,asset,tf,rows);
