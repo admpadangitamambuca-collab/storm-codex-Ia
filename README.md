@@ -21,7 +21,10 @@
 - **Copy Trade permanece fictício e somente usa aprovações do Turbo com confluência estritamente acima de 83/100.** Lotes anteriores preservados. Sem ordens reais.
 
 ## Testes e publicação
-- Testes de sintaxe nos **29 scripts inline** e módulos externos; arquivo `tests/v112-smoke.test.js` executável com `node --test tests/v112-smoke.test.js` (Node 18+).
+- A integração inclui `netlify.toml` com `publish = "."` e `functions = "netlify/functions"`. **No Netlify, conecte o site ao repositório GitHub**; apenas copiar o HTML não instala a função Yahoo.
+- Os testes de sintaxe abrangem **29 scripts inline** e módulos externos. Rode `node --test tests/v112-smoke.test.js tests/v112-validation.test.js` (Node 18+).
+- Regressões cobertas: validação estrita do ticker `^NDX`, 4 timeframes simultâneos, rejeição de QQQ/NQ, velas abertas e XAU Turbo com TP1 abaixo de US$4 mesmo com Clássico em AGUARDAR.
+- A confluência multi-timeframe do XAU Turbo usa a direção técnica **pré-filtro US$4** dos demais períodos, evitando bloqueio indireto por WAIT do Clássico. Nota e qualidade apresentadas no Turbo são independentes do Clássico, mas filtros de risco permanecem.
 - Os testes unitários usam **candles sintéticos para validar a lógica**, sem simular acurácia financeira. A conectividade real, limites e atraso de `^NDX` no Netlify ainda exigem validação com o site publicado.
 - Para publicar a versão integral: use a **raiz completa do repositório** e preserve `index.html`, `storm-nasdaq-v112.js`, `storm-precision-v112.js`, `netlify/functions/nasdaq-ohlc.js`, `learning-v108.js`, `b3-indices-v111.js` e `sw.js`.
 
