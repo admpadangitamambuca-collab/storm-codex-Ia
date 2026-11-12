@@ -215,10 +215,10 @@
   const todayBusiness=business(nowBrazil);
   const fresh=!meta.providerStale;
   const priceOnTick=Math.abs(last.close/tick-Math.round(last.close/tick))<0.0001;
-  const operational=fresh&&todayBusiness&&dayAllowed&&priceOnTick&&score>=78&&
+  const operational=meta.mode==='live'&&fresh&&todayBusiness&&dayAllowed&&priceOnTick&&score>=78&&
     (Math.abs(maGap)>.10)&&(![0,Infinity].includes(atr));
   const quality=operational?'ALTA':'EVITAR';
-  const reason=!fresh?'OHLC defasado':!todayBusiness?'Bolsa fechada':'Confluência ou níveis não autorizam operação';
+  const reason=meta.mode!=='live'?'DEMONSTRAÇÃO: sem feed real':!fresh?'OHLC defasado':!todayBusiness?'Bolsa fechada':!dayAllowed?'Última vela não pertence à sessão de hoje':'Confluência ou níveis não autorizam operação';
   const reasons=[
    'WIN/WDO: motor brasileiro independente; score heurístico, não probabilidade',
    'EMAs 9/21 '+(direction>0?'altistas':'baixistas')+' · distância/ATR '+Math.abs(maGap).toFixed(2),
