@@ -1,3 +1,12 @@
+# Storm Códex IA v10.6 — monitor Copy Trade com log de leituras (12/11/2026)
+
+- Registra no navegador as **leituras técnicas** por ativo/timeframe/vela fechada, inclusive quando nenhuma operação é autorizada. Exibe contagem de leituras, notas acima de 83/100, elegíveis e horário da última leitura.
+- O botão **Refresh** consulta novamente os quatro ativos e os quatro períodos e reavalia todos os itens de confluência sem precisar de nova vela; não cria operações repetidas no mesmo fechamento.
+- Monitor tenta retomar automaticamente as consultas após voltar de uma aba suspensa, reabrir uma página em cache, ganhar foco ou recuperar a conexão; varredura automática mais frequente, com limitação de consultas por fechamento.
+- Mantém regra única de seleção **Turbo estritamente >83/100** e as verificações técnicas de OHLC, direção, stop e alvo para simular entradas nos próximos candles. Preserva os lotes XAUUSD 0,10 e Forex 0,15, o histórico anterior, a banca de US$100 e os dois motores.
+- **Limite estrutural:** em um site HTML estático no Netlify Drop, o JavaScript não roda com a aba fechada nem enquanto o sistema operacional suspende o navegador. Esta atualização não promete operações simuladas 24 horas nem reconstrói operações passadas; para isso seria necessário um monitor de servidor com armazenamento persistente e implantação separada.
+- As verificações de regressão usam dados artificiais. Ainda falta comprovar end-to-end o envio de OHLC ao navegador e uma entrada real na simulação do site Netlify publicado.
+
 # Storm Códex IA v10.5 (12/11/2026)
 
 Correção Copy Trade: continua usando Turbo estritamente >83/100 e candles OHLC reais fechados; não consome fechamento quando faltam níveis técnicos recuperáveis, permite reconsulta manual imediata e não duplica operações. Se o Turbo não trouxer stop/alvo mas houver direção legítima, estima níveis por ATR14 e extremos de oito velas *somente na simulação*.
