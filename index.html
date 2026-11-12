@@ -1503,7 +1503,13 @@ async function binance(asset,tf,signal){
  return {candles,source:'Binance · spot público',feedSymbol:'BTCUSDT',providerStale:Date.now()-closedAt>period.ms+18000,
   futures:false,closedAt,mode:'live',providerTimestamp:closedAt,transport:'Binance REST · '+period.binance,fetchedAt:Date.now()};
 }
-async function load(asset,tf,signal){return asset==='BTCUSDT'?binance(asset,tf,signal):biquote(asset,tf,signal)}
+async function load(asset,tf,signal){
+ if(asset==='NASDAQ'){
+  if(!root.StormNasdaqLive113?.load)throw Error('USTEC live não carregado; não usar NAS100 antigo');
+  return root.StormNasdaqLive113.load(tf,signal);
+ }
+ return asset==='BTCUSDT'?binance(asset,tf,signal):biquote(asset,tf,signal);
+}
 return {PERIOD,normalOHLC,validateRange,load,biquote,binance,resolveNasdaq,resolveSP500};
 });
 </script>
@@ -2624,8 +2630,8 @@ window.Vortex83Bridge={read:()=>({asset:selectedAsset,tf:selectedTF,
  snapshots:Object.fromEntries(Object.keys(TF).map(tf=>{const s=snapshots.get(snapKey(selectedAsset,tf))||null;return [tf,s?{...s,analysis:s.legacyAnalysis||s.analysis}:null]})),
  settings:{...v6Settings},lagging:isLagging()})};
 
-const storageKey=(asset,tf)=>String(window.SGUserHistoryKey||'sg_history')+'_v76_'+asset+'_'+tf;
-function getHistory(asset=selectedAsset,tf=selectedTF){try{return (JSON.parse(localStorage.getItem(storageKey(asset,tf))||'[]')||[]).filter(x=>x&&['buy','sell'].includes(x.side)&&x.tf===tf&&x.asset===asset).slice(0,500)}catch{return []}}
+const storageKey=(asset,tf)=>String(window.SGUserHistoryKey||'sg_history')+'_v76_'+asset+'_'+tf+(asset==='NASDAQ'?'_USTEC_V113':'');
+function getHistory(asset=selectedAsset,tf=selectedTF){try{return (JSON.parse(localStorage.getItem(storageKey(asset,tf))||'[]')||[]).filter(x=>x&&['buy','sell'].includes(x.side)&&x.tf===tf&&x.asset===asset&&(asset!=='NASDAQ'||x.feedSymbol==='USTEC')).slice(0,500)}catch{return []}}
 function writeHistory(asset,tf,items){try{localStorage.setItem(storageKey(asset,tf),JSON.stringify(items.slice(0,500)))}catch{}}
 function readStorage(){state.signalHistory=getHistory()}
 function storeHistory(){writeHistory(selectedAsset,selectedTF,state.signalHistory)}
@@ -2715,7 +2721,7 @@ function emitEveryClosedCandle(asset,tf,snapshot,prior){
   if(i<44)continue;let sig=evaluate(candles,i,ctx);if(!['buy','sell'].includes(sig.side))continue;
   if(mode==='live'){const adaptive=V71().relearn(h,{asset,tf,side:sig.side,regime:sig.regime,closedAt:candles[i].t+ms,rawScore:sig.score});sig={...sig,score:adaptive.score,adaptive};}
   const id=[mode,asset,tf,candles[i].t].join('-');if(existing.has(id))continue;
-  h.unshift({id,asset,tf,side:sig.side,t:candles[i].t,price:sig.price,score:sig.score,target:sig.targetDist,stop:sig.stopDist,projectionOneCandle:sig.oneCandleProjection??null,horizon:sig.horizon||3,quality:sig.quality||null,strategy:sig.strategyName||null,strategyId:sig.strategyId||null,fitScore:sig.fitScore??null,regime:sig.regime,liquidity:sig.liquidity?.kind,adaptiveN:sig.adaptive?.n||0,rr:sig.riskMeta?.rr||null,spread:v6Settings.spread,slippage:v6Settings.slippage,commission:v6Settings.commission,mode,origin:lastSeen!==-Infinity&&mode==='live'&&Date.now()-(candles[i].t+ms)<ms+120000?'observed':'historical_import',status:'pending',recordedAt:Date.now()});existing.add(id);newSignals++;
+  h.unshift({id,asset,tf,feedSymbol:snapshot.feedSymbol||asset,side:sig.side,t:candles[i].t,price:sig.price,score:sig.score,target:sig.targetDist,stop:sig.stopDist,projectionOneCandle:sig.oneCandleProjection??null,horizon:sig.horizon||3,quality:sig.quality||null,strategy:sig.strategyName||null,strategyId:sig.strategyId||null,fitScore:sig.fitScore??null,regime:sig.regime,liquidity:sig.liquidity?.kind,adaptiveN:sig.adaptive?.n||0,rr:sig.riskMeta?.rr||null,spread:v6Settings.spread,slippage:v6Settings.slippage,commission:v6Settings.commission,mode,origin:lastSeen!==-Infinity&&mode==='live'&&Date.now()-(candles[i].t+ms)<ms+120000?'observed':'historical_import',status:'pending',recordedAt:Date.now()});existing.add(id);newSignals++;
  }
  const resolved=resolveTracked(h,candles,tf);
  if(newSignals||resolved){h.sort((a,b)=>b.t-a.t);writeHistory(asset,tf,h);if(mode==='live')pushCloudSoon();}
