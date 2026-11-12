@@ -1,3 +1,33 @@
+# Storm Códex IA v11.0 — NAS100 corrigido e memória adaptativa em todos os ativos (12/11/2026)
+
+## NAS100 / Nasdaq-100
+
+- Primeiro consulta `https://biquote.io/api/NAS100/ohlc` no período selecionado.
+- Caso não haja candles reais válidos, consulta o catálogo `/api/symbols/search` e verifica aliases estritamente relacionados ao Nasdaq-100 (`US100`, `USTEC`, `NASDAQ100`, `NDX`, ou códigos explicitamente identificados), sem ações/ETFs ou ativos não relacionados.
+- O símbolo real confirmado aparece no painel e na ponte de leitura; sem feed verificável, sinal é bloqueado e há diagnóstico do erro.
+- Dados defasados, mercado fechado, falhas HTTP e candles abertos são sinalizados, não geram operações fictícias.
+- Não foi possível validar a cotação NAS100 ao vivo nesta sessão. Testar diretamente no Netlify com rede e mercado disponíveis antes de publicar na principal.
+
+## Memória adaptativa — todos os mercados
+
+Ativos: `XAUUSD`, `BTCUSD`, `BTCUSDT`, `EURUSD`, `USDJPY`, `USDCAD`, `USDCHF`, `AUDUSD`, `NASDAQ`, `SP500`.
+
+- Memória individual por **ativo + timeframe + motor**: Clássico para metais/Forex/Bitcoin; Índices para Nasdaq/S&P 500; Turbo para análises em que o motor Turbo efetivamente emite leituras.
+- Apenas sinais novos observados prospectivamente com confluência **estritamente maior que 78/100**, OHLC público e entrada/stop/alvo válidos.
+- Captura resultados mesmo quando há outras leituras pendentes, mas **desconta a dependência estatística de sinais sobrepostos** na calibração.
+- Motor de aprendizado em camadas: características de preço/volatilidade/sessão, taxa de acertos observada, retorno em R, confiança Wilson, regularização por recência, detecção de deterioração e validação cronológica 70/30 com embargo.
+- Ajuste conservador: até +3 ou −4 pontos do score apenas após amostra independente suficiente. Score heurístico não é chance garantida de lucro.
+- Reconciliador de resultados pendentes: enquanto a aba estiver aberta/visível, revisa até seis conjuntos por ciclo de 95 segundos usando os feeds existentes, inclusive de outros ativos e períodos. **Não cria sinais retrospectivos nem aprende novos sinais quando o app está fechado.**
+- Painel mostra memória dos dez ativos e permite backup JSON/restauração manual. Histórico anterior v10.8 é preservado; não transfere automaticamente entre aparelhos.
+- Copy Trade fictício mantém regra anterior do Turbo, exigindo score **>83/100** para entrada, sem ordens reais.
+- Testes estáticos de sintaxe dos scripts e testes unitários sintéticos aprovados. Não é validação de desempenho financeiro e não comprova disponibilidade do NAS100 ao vivo.
+
+## Deploy
+
+Baixe o ZIP da ramificação `feature/indices-live-and-adaptive-memory-v110-20261112` e publique o conteúdo inteiro no Netlify, mantendo `index.html`, `learning-v108.js`, `sw.js` e demais arquivos da raiz juntos. Se houver cache no navegador, faça recarga forçada; nunca publique apenas o HTML.
+
+---
+
 # Storm Códex IA v10.8 — Aprendizado por resultados prospectivos (12/11/2026)
 
 - Os três motores **Clássico, Índices (Nasdaq-100 e S&P 500) e Turbo** passam a avaliar um histórico local isolado por motor, ativo e timeframe. Um resultado não contamina outro.
