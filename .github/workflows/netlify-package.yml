@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - sw.js
+      - learning-v108.js
       - README.md
       - .github/workflows/netlify-package.yml
   workflow_dispatch:
@@ -20,33 +21,39 @@ jobs:
           node tests/copy-trade-smoke.cjs
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
+          node tests/outcome-learning-regression.cjs
       - name: Create standalone Netlify package
         run: |
           mkdir -p dist/netlify
-          cp index.html sw.js dist/netlify/
+          cp index.html sw.js learning-v108.js dist/netlify/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
-          STORM CODEX IA v10.7 — INDICES, JANELAS RECOLHIVEIS E COPY TRADE
-          Conteudo completo para Netlify: index.html e sw.js na raiz.
+          STORM CODEX IA v10.8 — APRENDIZADO DOS TRES MOTORES
+          Conteudo completo para Netlify: index.html, sw.js e learning-v108.js na raiz.
           Publicar: arraste este ZIP no Netlify Drop ou extraia os arquivos.
           Modo Indices: Nasdaq-100 e S&P 500 com selecao M1/M5/M15/H1; abas e janelas recolhiveis.
           O monitor ficticio inicia ao abrir o aplicativo e registra as leituras de 16 pares enquanto aberto.
           Operacoes: apenas novas velas fechadas, com Turbo > 83/100 e OHLC/stop/alvo validos.
           Os dados de mercado publicos podem atrasar; sem execucao em corretora.
           Nao funciona com a aba fechada. Nao garante lucratividade. Historico salvo localmente no navegador.
+          Aprendizado: Clássico, Índices e Turbo com historicos locais separados; captura prospectiva de sinais >78/100.
+          Auditoria TP/stop em ate 6 velas; casos ambiguos, expirados ou incompletos nao contam como acerto/perda.
+          Parametros: EMAs, ATR, RSI, eficiencia do movimento, pressao do candle, rompimento, regime e sessao UTC.
+          Somente depois de 40 desfechos confirmados por mercado/periodo e validacao cronologica, score pode variar poucos pontos.
+          Leitura ficticia sem acesso a corretora. Requer navegador aberto e dados OHLC novos.
           EOF
-          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_7_INDICES_JANELAS_NETLIFY.zip index.html sw.js LEIA_ME.txt)
-          unzip -l dist/Storm_Codex_IA_v10_7_INDICES_JANELAS_NETLIFY.zip
+          (cd dist/netlify && zip -9 -q ../Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip index.html sw.js learning-v108.js LEIA_ME.txt)
+          unzip -l dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v10_7_INDICES_JANELAS_NETLIFY
-          path: dist/Storm_Codex_IA_v10_7_INDICES_JANELAS_NETLIFY.zip
+          name: Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY
+          path: dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v10_7_INDICES_JANELAS_NETLIFY.zip
-          if gh release view v10.7 >/dev/null 2>&1; then
-            gh release upload v10.7 "$FILE" --clobber
+          FILE=dist/Storm_Codex_IA_v10_8_APRENDIZADO_3_MOTORES_NETLIFY.zip
+          if gh release view v10.8 >/dev/null 2>&1; then
+            gh release upload v10.8 "$FILE" --clobber
           else
-            gh release create v10.7 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.7 - Indices e janelas recolhiveis" --notes "Pacote completo para Netlify, indices Nasdaq-100 e S&P 500, janelas recolhiveis e monitor Copy Trade ficticio >83. Testes automatizados de regressao; sem execucao real."
+            gh release create v10.8 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.8 - aprendizado em tres motores" --notes "Pacote Netlify completo com camada prospectiva de aprendizado >78/100 para Classico, Indices e Turbo. Copy ficticio >83 preservado. Sem promessa de lucratividade."
           fi
