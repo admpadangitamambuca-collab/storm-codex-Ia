@@ -3808,7 +3808,13 @@ function planFor(data,struct,macro){const a=data?.state?.analysis,asset=data?.as
  if(macro.danger)blocked.push('Alerta macroeconômico sinaliza cautela.');
  if(available>=2&&aligned<2)blocked.push('Confirmação insuficiente entre os períodos recentes.');
  if(hasLevels&&estimatedNetRR<1.1)blocked.push('Relação recompensa/risco estimada abaixo de 1,10.');
- return {side,asset,tf,entry,stop,targets,distances,hasLevels,hasData,estimatedNetRR,aligned,available,mtf,blocked,ready:blocked.length===0,score:Number(a?.score)||0,quality:a?.quality||'—',strategy:a?.strategyName||a?.setup?.name||'—',source:data?.state?.source||'',closedAt:data?.state?.closedAt||0,currency:quote(asset),goldIndependent};
+ const independentScore=goldIndependent?.ready?
+  Math.min(95,Math.max(0,Math.round((Number(a?.turboBase?.score)||Number(a?.score)||0)+(Number(goldIndependent.scoreDelta)||0)))):Number(a?.score)||0;
+ return {side,asset,tf,entry,stop,targets,distances,hasLevels,hasData,estimatedNetRR,aligned,available,mtf,blocked,
+  ready:blocked.length===0,score:independentScore,
+  quality:goldIndependent?.ready?goldIndependent.quality:(a?.quality||'—'),
+  strategy:goldIndependent?.ready?'Turbo Gold Precision · ATR + estrutura':(a?.strategyName||a?.setup?.name||'—'),
+  source:data?.state?.source||'',closedAt:data?.state?.closedAt||0,currency:quote(asset),goldIndependent};
 }
 function detectAndSave(data,plan){if(!enabled||!plan.ready||!plan.hasData||data.state?.manualReadSameCandle)return;
  const k=data.asset+'|'+data.tf,armed=arms.get(k);
