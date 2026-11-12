@@ -144,7 +144,7 @@
     // Nunca replica um mesmo fechamento, nem cria janelas de treino sobrepostas.
     const otherOpen=rows.some(r=>r.status==='pending');
     const overlap=rows.some(r=>r.t>=last.t-HORIZON*TF[tf]&&r.t<=last.t);
-    if(score>THRESHOLD&&levels(p)&&!otherOpen&&!overlap){
+    if(p.trackAllowed!==false&&score>THRESHOLD&&levels(p)&&!otherOpen&&!overlap){
      const record={id:seenKey+'|'+last.t,engine,asset,tf,t:last.t,closedAt,
       capturedAt:Date.now(),side:p.side,score,baseScore:base,technical,learned,
       entry:p.entry,stop:p.stop,tp:p.tp,atr:f.atr,regime:f.regime,session:f.session,
