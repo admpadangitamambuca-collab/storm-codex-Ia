@@ -47,5 +47,5 @@ jobs:
           if gh release view v10.6 >/dev/null 2>&1; then
             gh release upload v10.6 "$FILE" --clobber
           else
-            gh release create v10.6 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.6 - Copy Trade monitor e leituras" --notes "Pacote completo para Netlify. Monitor automatico e simulacao Turbo >83. Testes automatizados passaram. Sem operacoes reais."
+            gh release create v10.6 "$FILE" --target "$GITHUB_SHA" --title "Storm Codex IA 10.6 - Copy Trade monitor e leituras" --notes "ZIP completo Netlify v10.6: historico de leituras, retomada no navegador e Copy >83. Simulacao ficticia; requer site aberto; sem servidor 24/7 ou prova end-to-end com feed real."
           fi
