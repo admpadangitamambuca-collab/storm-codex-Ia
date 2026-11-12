@@ -14,8 +14,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Regression tests (27 inline scripts, Copy monitor)
+      - name: Regression tests (Copy monitor and learning 3 engines)
         run: |
           node tests/copy-trade-smoke.cjs
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
+          node tests/outcome-learning-regression.cjs
