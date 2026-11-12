@@ -77,12 +77,19 @@
   return {ready:true,technical:clamp(technical,-3,3),regime,session,rsi:rsi(tail),atr,efficiency,atrRatio,emaGapAtr:gap,pressure,breakout:broke,notes};
  }
 
- function settle(rows,bars,tf){
+ function settle(rows,bars,tf,contract=null){
   const ms=TF[tf];if(!ms||!Array.isArray(bars)||bars.length<2)return false;
   let modified=false;
   const map=new Map(bars.map((b,i)=>[b.t,i]));
   for(const r of rows){
    if(r.status!=='pending')continue;
+   // Não resolver um contrato vencido com preços do novo vencimento.
+   if(contract&&r.contract&&r.contract!==contract){
+    r.status='incomplete';r.reason='Rolagem '+r.contract+' → '+contract+': desfecho não verificável';modified=true;continue;
+   }
+   if(contract&&['WIN','WDO'].includes(r.asset)&&!r.contract){
+    r.status='incomplete';r.reason='Registro B3 sem ticker do contrato';modified=true;continue;
+   }
    const idx=map.get(r.t);
    if(idx===undefined){
     if(bars[0].t>r.t){r.status='incomplete';r.reason='Vela de origem ausente; nenhum resultado inferido';modified=true}
@@ -201,7 +208,7 @@
    &&!root.document?.hidden&&Number.isFinite(closedAt)
    &&closedAt<=Date.now()+1500&&Date.now()-closedAt<=TF[tf]+90000;
   const rows=rowsOf(engine,asset,tf);
-  const changed=live?settle(rows,bars,tf):false;
+  const changed=live?settle(rows,bars,tf,p.contract||null):false;
   const stats=calibrate(rows,closedAt,{...f,tf,side:p.side,contract:p.contract||null});
   const technical=live&&f.ready?f.technical:0;
   const learned=live&&stats.active?stats.adjustment:0;
@@ -328,7 +335,7 @@
       const rows=rowsOf(engine,asset,tf);
       if(!rows.some(r=>r.status==='pending'))continue;
       const previous=rows.filter(r=>r.status==='pending').length;
-      if(settle(rows,data.candles,tf)){
+      if(settle(rows,data.candles,tf,['WIN','WDO'].includes(asset)?data.feedSymbol:null)){
        const remaining=rows.filter(r=>r.status==='pending').length;
        resolved+=Math.max(0,previous-remaining);
        save(engine,asset,tf,rows);
