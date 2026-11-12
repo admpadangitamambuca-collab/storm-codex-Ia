@@ -57,15 +57,22 @@ assert.equal(broken[0].status,'incomplete','lacunas não viram perda');
 function sample(negative=false){
  return Array.from({length:50},(_,i)=>{
   const win=!negative&&i%10<7,R=win?1.6:-1;
-  return {engine:'turbo',asset:'XAUUSD',tf:'M1',t:1+i*MS,closedAtResult:1+(i+1)*MS,
+  // Amostras com resolução em 6 velas: 7 minutos entre entradas evita
+  // inflar confiança com 50 operações altamente sobrepostas.
+  const minute=i*7;
+  return {engine:'turbo',asset:'XAUUSD',tf:'M1',t:1+minute*MS,closedAtResult:1+(minute+6)*MS,
    status:win?'win':'loss',R,regime:'tendência'};
  });
 }
-const positive=calibrate(sample(),100000000,{regime:'tendência'});
+const overlapping=sample().map((r,i)=>({...r,t:1+i*MS,closedAtResult:1+(i+6)*MS}));
+const overfit=calibrate(overlapping,100000000,{tf:'M1',regime:'tendência'});
+assert.equal(overfit.active,false,'50 operações sobrepostas não podem contar como 50 janelas independentes');
+assert.ok(overfit.independent<20,'deduplicação temporal contra excesso de confiança');
+const positive=calibrate(sample(),100000000,{tf:'M1',regime:'tendência'});
 assert.equal(positive.active,true);
 assert.ok(positive.adjustment>0,'ajuste com treino e validação positivos');
-const negative=calibrate(sample(true),100000000,{regime:'tendência'});
+const negative=calibrate(sample(true),100000000,{tf:'M1',regime:'tendência'});
 assert.ok(negative.adjustment<0,'perdas reduzem score');
-const noFuture=calibrate(sample(),25*MS,{regime:'tendência'});
+const noFuture=calibrate(sample(),25*MS,{tf:'M1',regime:'tendência'});
 assert.equal(noFuture.active,false,'resultados do futuro não entram na calibração');
 console.log('PASS v10.8: features, prospectividade, deduplicação, separação de motores, TP/SL ambíguo, lacunas e calibração temporal');
