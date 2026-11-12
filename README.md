@@ -1,3 +1,13 @@
+# Storm Códex IA v10.6 (12/11/2026)
+
+**Diagnóstico do Copy Trade:** o monitor atual executa no navegador; sem a página ativa, não gera observações contínuas, e o Netlify estático não o mantém em execução. Isso explica interrupções ao fechar a aba, deixar o iPhone bloquear/suspender o navegador ou perder a conexão. Uma fonte Biquote atrasada, OHLC inválido, direção sem plano ou score Turbo ≤83 também impede entradas, e agora isso fica explícito na interface. A causa exata de cada período deve ser conferida no diagnóstico dos 16 pares — não foi validada ainda a consulta ao feed real no Netlify.
+
+**Novidades:** log local das velas avaliadas em todos os 4 ativos (XAUUSD, EURUSD, USDJPY, AUDUSD) × 4 períodos (M1, M5, M15, H1); auditoria de Refresh sem duplicar entradas; retorno imediato à consulta quando o site volta a ficar visível, online ou em foco; resumo de disponibilidade dos 16 feeds; revisão do rótulo “monitor ativo” para não esconder falhas. Regra de entrada **Turbo estritamente maior que 83/100** preservada, junto da exigência de OHLC real recente, lado e preços de entrada/stop/TP coerentes; nenhum backfill de operações que não puderam ser executadas no instante do sinal.
+
+**Publicação:** use ZIP autossuficiente v10.6 do release GitHub (index.html + sw.js + instruções). Atualizar o GitHub não significa que um site Netlify Drop manual foi republicado; é necessário publicar o pacote atualizado. O Copy permanece **100% fictício** e exige página aberta e executando para monitorar — não há scanner 24/7 independente do navegador nesta versão.
+
+---
+
 # Storm Códex IA v10.6 — monitor Copy Trade com log de leituras (12/11/2026)
 
 - Registra no navegador as **leituras técnicas** por ativo/timeframe/vela fechada, inclusive quando nenhuma operação é autorizada. Exibe contagem de leituras, notas acima de 83/100, elegíveis e horário da última leitura.
