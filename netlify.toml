@@ -1,0 +1,8 @@
+# Storm Códex IA 11.2 — manter funções serverless junto ao site estático.
+# Publique pelo Netlify conectado ao GitHub para executar as Functions.
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
