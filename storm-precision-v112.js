@@ -51,7 +51,7 @@
   const breakout=dir>0?last.close>high:last.close<low;
   const sweepAgainst=dir>0?(last.high>high+atr*.06&&last.close<high-atr*.06):(last.low<low-atr*.06&&last.close>low+atr*.06);
   const counterWick=dir>0?(last.high-last.close)/Math.max(atr,1e-9):(last.close-last.low)/Math.max(atr,1e-9);
-  const macd=ema(closes,12).map((x,i)=>x-ema(closes,26)[i]);
+  const fast=ema(closes,12),slow=ema(closes,26),macd=fast.map((x,i)=>x-slow[i]);
   const hist=macd.at(-1)-ema(macd,9).at(-1);
   let scoreDelta=0;
   scoreDelta+=emaTrend>.10?2:emaTrend<-.13?-3:0;
@@ -112,9 +112,9 @@
   const cappedRoom=room>atr*.15?Math.min(preferred,room+atr*.30):preferred;
   const targetDist=Math.max(.02,Number(Math.max(minimum,cappedRoom).toFixed(2)));
   const netRR=targetDist/stopDist;
-  const baseBad=base.quality==='EVITAR'&&legacy?.oneCandleGate?.accepted===true;
+  const baseBad=base.quality==='EVITAR';
   const hardBlocks=[...q.hardBlocks];
-  if(baseBad)hardBlocks.push('Motor de base já identificou veto técnico independente dos US$4');
+  if(baseBad)hardBlocks.push('Motor de base já identificou risco técnico (não ligado exclusivamente aos US$4)');
   if(netRR<1.2)hardBlocks.push('Risco/recompensa insuficiente');
   if(q.emaTrend<-.22&&q.slowTrend<-.20)hardBlocks.push('EMAs 9/21/50 contra a direção');
   const ready=hardBlocks.length===0;
