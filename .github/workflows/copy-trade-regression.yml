@@ -20,4 +20,4 @@ jobs:
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-          node --test tests/v112-smoke.test.js
+          node --test tests/v112-smoke.test.js tests/v113-nasdaq-live.test.js
