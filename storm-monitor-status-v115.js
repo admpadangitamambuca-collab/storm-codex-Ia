@@ -1,4 +1,4 @@
-/* Storm 11.5 - read-only cloud monitor display.
+/* Storm 11.6 - read-only cloud monitor display.
  * Observes what the server actually reports; never implies an active worker.
  */
 (function(root){'use strict';
@@ -8,7 +8,7 @@
   if(panel||!$('stormCopyTrade'))return;
   panel=document.createElement('section');panel.id='stormCloud115';
   panel.style.cssText='margin:14px 0 19px;padding:16px;border:1px solid #395b57;border-radius:13px;background:linear-gradient(115deg,#102a2a,#14202c);color:#dce8e8';
-  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="color:#93ead0">MONITOR DE MERCADO · 11.5</b><p id="stormCloudText" style="font-size:12px;line-height:1.6;color:#a9c4c9;margin:7px 0">Verificando status real do serviço agendado…</p></div><button type="button" class="storm-v95-btn" id="stormCloudRefresh">Atualizar status do servidor</button></div><details style="margin-top:9px"><summary style="cursor:pointer;color:#eed3a2;font-size:12px">Ver fontes acompanhadas</summary><div id="stormCloudFeedRows" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-top:10px"></div></details><p style="font-size:11px;line-height:1.5;color:#8fa6b5;margin:12px 0 0">Pesquisa agendada a cada 5 minutos quando a versão Git está publicada e o serviço está operacional. Não é streaming tick a tick, não opera na corretora e não compartilha a memória privada do navegador. WIN/WDO só serão atuais com feed intradiário válido.</p>';
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="color:#93ead0">MONITOR DE MERCADO · 11.6</b><p id="stormCloudText" style="font-size:12px;line-height:1.6;color:#a9c4c9;margin:7px 0">Verificando status real do serviço agendado…</p></div><button type="button" class="storm-v95-btn" id="stormCloudRefresh">Atualizar status do servidor</button></div><details style="margin-top:9px"><summary style="cursor:pointer;color:#eed3a2;font-size:12px">Ver fontes acompanhadas</summary><div id="stormCloudFeedRows" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-top:10px"></div></details><p style="font-size:11px;line-height:1.5;color:#8fa6b5;margin:12px 0 0">Varredura de candles M1 a cada minuto para ouro/Forex; auditoria completa dos 24 pares/TF a cada 5 minutos, sujeita a limites Netlify. Não é streaming tick a tick, não opera na corretora e não compartilha a memória privada do navegador. WIN/WDO só serão atuais com feed intradiário válido.</p>';
   const target=$('stormLab114')||$('stormCopyTrade');
   target.before(panel);
   $('stormCloudRefresh').addEventListener('click',refresh);
@@ -23,7 +23,14 @@
   const sub=document.createElement('small');sub.style.color='#91abb8';
   sub.textContent=(row.lastClosedAt?new Date(row.lastClosedAt).toLocaleString('pt-BR'):'Sem candle recente')+
    ' · '+(Number(row.count)||0)+' sinais simulados';
-  cell.append(title,st,sub);container.appendChild(cell);
+  const detail=document.createElement('small');detail.style.cssText='display:block;color:#9ab5bd;margin-top:4px';
+  const t=row.readings?.turbo;
+  detail.textContent=t?'Turbo: '+(t.accepted?'APROVADO':'BLOQUEADO')+
+   (Number.isFinite(t.score)?' · '+Math.round(t.score)+'/100':'')+
+   (t.reason?' · '+String(t.reason).slice(0,75):''):'Sem nova avaliação Turbo';
+  const outcomes=document.createElement('small');outcomes.style.cssText='display:block;color:#abc4bd';
+  outcomes.textContent=(Number(row.pending)||0)+' simulações abertas · '+(Number(row.closed)||0)+' encerradas';
+  cell.append(title,st,sub,detail,outcomes);container.appendChild(cell);
  }
  async function refresh(){
   if(!ready||busy)return;
@@ -36,18 +43,20 @@
    finally{clearTimeout(timer)}
    if(!response.ok)throw Error('Status HTTP '+response.status);
    const body=await response.json();last=body;
-   if(body.status!=='OBSERVING'){
+   if(body.status!=='OBSERVING'&&body.status!=='DELAYED'){
     info.textContent='Monitor ainda não ativado no deploy: '+String(body.message||body.status||'sem execução registrada');
     rows.replaceChildren();return;
    }
    const age=Date.now()-Number(body.checkedAt);
-   const stale=!Number.isFinite(age)||age>16*60000;
+   const stale=body.status==='DELAYED'||!Number.isFinite(age)||age>3*60000;
    info.textContent=(stale?'MONITOR SEM EXECUÇÃO RECENTE':'MONITOR COM CICLO REGISTRADO')+
     ' · Último ciclo '+new Date(body.checkedAt).toLocaleString('pt-BR')+
     ' · '+Number(body.healthy||0)+' feeds recentes'+
     ' · '+Number(body.failed||0)+' falhas'+
     ' · macro '+(body.macroVerified?'verificada':'não verificada')+
-    ' · cadência 5 minutos';
+    ' · atualização M1 a cada '+Number(body.cadenceMinutes||5)+' minuto(s)'+
+    (body.xauReference?' · spot ouro '+(body.xauReference.fresh?'recente':'indisponível'):'')+
+    (body.simulated?' · '+Number(body.simulated.pending||0)+' simulações em aberto':'');
    rows.replaceChildren();
    (Array.isArray(body.feeds)?body.feeds:[]).forEach(row=>item(rows,row));
   }catch(err){
