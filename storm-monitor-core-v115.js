@@ -188,7 +188,7 @@ async function macroData(fetcher=fetch){
  }catch{return {verified:false,news:[],calendar:[],calendarAt:0};}
 }
 /* Any missing feed stays failed; never generates a synthetic replacement. */
-async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),runtime=null}={}){
+async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),runtime=null,mergeStatus=false}={}){
  if(!store||typeof store.getWithMetadata!=='function'||typeof store.setJSON!=='function')
   throw Error('Armazenamento persistente não configurado');
  const results=[],quotes=[];
@@ -229,13 +229,24 @@ async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),
     closed:next.signals.filter(e=>e.result==='win'||e.result==='loss').length});
   }catch(e){results.push({asset:pair.asset,tf:pair.tf,state:'STORAGE_ERROR',error:bounded(e?.message||e),persisted:false});}
  }
- const status={version:'11.5',checkedAt:now,macroVerified:macro.verified,pairs:results.length,
+ let summary=results;
+ if(mergeStatus){
+  const previous=await store.get('status-v115',{type:'json',consistency:'strong'});
+  const all=new Map();
+  for(const item of (Array.isArray(previous?.results)?previous.results:[]))
+   all.set(item.asset+'|'+item.tf,item);
+  for(const item of results)all.set(item.asset+'|'+item.tf,item);
+  summary=activePairs().map(p=>all.get(p.asset+'|'+p.tf)||
+   {asset:p.asset,tf:p.tf,state:'UNINITIALIZED',error:'Aguardando primeira coleta'});
+ }
+ const status={version:'11.6',checkedAt:now,macroVerified:macro.verified,
+  pairs:summary.length,processedPairs:results.length,
   xauReference:{source:xauReference.source||'XAUS.com',fresh:xauReference.fresh===true,
    price:xauReference.fresh?xauReference.price:null,quotedAt:xauReference.quotedAt||null,
    ageMs:xauReference.ageMs??null,eligibleForSignals:false},
-  healthy:results.filter(x=>x.state==='RECENT').length,
-  failed:results.filter(x=>x.state==='ERROR'||x.state==='STORAGE_ERROR').length,
-  persisted:results.filter(x=>x.persisted).length,results};
+  healthy:summary.filter(x=>x.state==='RECENT').length,
+  failed:summary.filter(x=>x.state==='ERROR'||x.state==='STORAGE_ERROR').length,
+  persisted:results.filter(x=>x.persisted).length,results:summary};
  await store.setJSON('status-v115',status);
  return status;
 }
