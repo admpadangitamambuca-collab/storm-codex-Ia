@@ -1,4 +1,4 @@
-name: Publish Netlify ZIP v11.5 (audited)
+name: Publish Netlify ZIP v11.6 gold live (audited)
 on:
   push:
     branches: [main]
@@ -13,6 +13,9 @@ on:
       - storm-lab-v114.js
       - storm-lab-v114.css
       - storm-monitor-status-v115.js
+      - storm-xau-live-v116.js
+      - storm-xau-health-v116.js
+      - storm-monitor-core-v115.js
       - storm-runtime-v115.js
       - storm-replay-v115.js
       - package.json
@@ -43,9 +46,12 @@ jobs:
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
           node --test tests/v112-smoke.test.js tests/v112-validation.test.js tests/v113-audit.test.js tests/v114-lab.test.js
-          node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js
+          node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js tests/v116-xau.test.js
           node --check b3-indices-v111.js
           node --check storm-monitor-status-v115.js
+          node --check storm-xau-live-v116.js
+          node --check storm-xau-health-v116.js
+          node --check netlify/functions/xau-health.mjs
           node --check storm-runtime-v115.js
           node --check storm-replay-v115.js
           node --check storm-monitor-core-v115.js
@@ -58,14 +64,18 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/netlify/netlify/functions dist/netlify/tools
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-runtime-v115.js storm-replay-v115.js storm-monitor-core-v115.js package.json netlify.toml dist/netlify/
-          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.mjs netlify/functions/storm-status.mjs dist/netlify/netlify/functions/
-          cp tools/replay-v115.cjs tools/live-feed-probe-v115.cjs dist/netlify/tools/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-xau-live-v116.js storm-xau-health-v116.js storm-runtime-v115.js storm-replay-v115.js storm-monitor-core-v115.js package.json netlify.toml README.md dist/netlify/
+          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.mjs netlify/functions/storm-status.mjs netlify/functions/xau-health.mjs dist/netlify/netlify/functions/
+          cp tools/replay-v115.cjs tools/live-feed-probe-v115.cjs tools/probe-xau-v116.cjs dist/netlify/tools/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
-          STORM CODEX IA 11.5 - MONITOR AGENDADO E REPLAY DOS MOTORES
+          STORM CODEX IA 11.6 - MONITOR AGENDADO E REPLAY DOS MOTORES
           Pacote completo para deploy do codigo-fonte.
           O deploy recomendado e CONECTAR O GITHUB AO NETLIFY. Drop/ZIP estatico NAO publica Functions/cron.
           A rotina cron usa Netlify Functions e Blobs e depende da disponibilidade/cotas do plano.
+          Versao 11.6: em XAUUSD o painel mostra SPOT ATUAL separado da ultima VELA REAL da Biquote.
+          Spot fresco nao vira OHLC. Sem vela recente os sinais reais do motor ficam bloqueados.
+          Monitor: M1 de ouro e Forex a cada minuto, todos os 24 ativo/TF a cada 5 minutos.
+          Funcao de diagnóstico: /.netlify/functions/xau-health?tf=M5
           M5/M1/M15/H1 dependem de OHLC PUBLICO REAL e fresco: sem dados, NAO emite sinais.
           WIN/WDO: primeiro feed B3 licenciado e autorizado, depois Biquote; sem contrato correto NAO opera.
           B3 real precisa STORM_B3_PROVIDER_URL, STORM_B3_PROVIDER_TOKEN e STORM_B3_REDISTRIBUTION_ALLOWED=true somente com DIREITOS de redistribuicao.
@@ -84,33 +94,36 @@ jobs:
           required=['index.html','sw.js','learning-v108.js','b3-indices-v111.js',
           'storm-nasdaq-v112.js','storm-precision-v112.js','storm-b3-quote-v113.js',
           'storm-lab-v114.js','storm-lab-v114.css','storm-monitor-status-v115.js',
-          'storm-runtime-v115.js','storm-replay-v115.js','storm-monitor-core-v115.js','package.json','netlify.toml',
+          'storm-runtime-v115.js','storm-replay-v115.js','storm-monitor-core-v115.js',
+          'storm-xau-live-v116.js','storm-xau-health-v116.js','package.json','netlify.toml','README.md',
           'netlify/functions/nasdaq-ohlc.js','netlify/functions/b3-quote.js',
           'netlify/functions/b3-live-ohlc.js','netlify/functions/storm-monitor-scheduled.mjs',
-          'netlify/functions/storm-status.mjs','tools/replay-v115.cjs']
+          'netlify/functions/storm-status.mjs','netlify/functions/xau-health.mjs',
+          'tools/replay-v115.cjs','tools/probe-xau-v116.cjs']
           missing=[r for r in required+local if not (d/r).is_file()]
           if missing: raise SystemExit('Pacote incompleto: '+', '.join(sorted(set(missing))))
           if 'storm-lab-v114.css' not in html: raise SystemExit('CSS ausente')
           if 'storm-monitor-status-v115.js' not in html: raise SystemExit('Monitor ausente')
+          if 'storm-xau-live-v116.js' not in html: raise SystemExit('Diagnóstico XAU v11.6 ausente')
           print('Arquivo distribuido de referencia: '+str(len(required))+' ativos, '+str(len(local))+' scripts HTML')
           PY
-          (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY.zip .)
-          unzip -t dist/Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY.zip
-          unzip -l dist/Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY.zip
+          (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip .)
+          unzip -t dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
+          unzip -l dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY
-          path: dist/Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY.zip
+          name: Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY
+          path: dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
       - name: Publish direct-download release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v11_5_MONITOR_REPLAY_NETLIFY.zip
-          if gh release view v11.5-monitor >/dev/null 2>&1; then
-            gh release upload v11.5-monitor "$FILE" --clobber
+          FILE=dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
+          if gh release view v11.6-gold >/dev/null 2>&1; then
+            gh release upload v11.6-gold "$FILE" --clobber
           else
-            gh release create v11.5-monitor "$FILE" --target "$GITHUB_SHA" \
-              --title "Storm Codex IA 11.5 - monitor e backtest dos motores" \
+            gh release create v11.6-gold "$FILE" --target "$GITHUB_SHA" \
+              --title "Storm Codex IA 11.6 - monitor e backtest dos motores" \
               --notes "Inclui monitor agendado Netlify+Blobs, replay cronologico dos motores reais e adaptador de feed B3 licenciado. Precisa deploy Git e autorizacao para live WIN/WDO; sem garantia de disponibilidade/resultado."
           fi

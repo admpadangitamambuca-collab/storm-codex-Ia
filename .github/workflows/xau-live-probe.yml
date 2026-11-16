@@ -1,0 +1,15 @@
+name: Inspect live gold XAUUSD sources (one-shot)
+on:
+  push:
+    branches: [feature/xau-freshness-tick-repair-v116-20261116]
+  workflow_dispatch:
+jobs:
+  xau:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/probe-xau-v116.cjs

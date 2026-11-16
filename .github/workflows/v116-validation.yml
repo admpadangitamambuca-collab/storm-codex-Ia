@@ -1,0 +1,20 @@
+name: Storm v11.6 gold/Copy integration
+on:
+  push:
+    branches: [feature/xau-freshness-tick-repair-v116-20261116]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  v116:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: node tests/copy-trade-smoke.cjs
+      - run: node tests/manual_refresh_regression.cjs && node tests/asset-specialist-regression.cjs && node tests/outcome-learning-regression.cjs
+      - run: node --test tests/v112-smoke.test.js tests/v112-validation.test.js tests/v113-audit.test.js tests/v114-lab.test.js
+      - run: node --check storm-xau-health-v116.js && node --check storm-xau-live-v116.js && node --check netlify/functions/xau-health.mjs && node --check storm-monitor-core-v115.js && node --check netlify/functions/storm-monitor-scheduled.mjs && node --check netlify/functions/storm-status.mjs
