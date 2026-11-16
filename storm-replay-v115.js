@@ -75,7 +75,7 @@ function analyzePoint(input,ctx,opts={}){
  const {asset,tf,feedSymbol,bars,clock,engine}=input,w=ctx.runtime.sandbox,ms=FRAME[tf];
  ctx.runtime.setNow(clock);
  const classic = engine==='indices'&&['WIN','WDO'].includes(asset)
-  ?{final:B3.analyze(bars,tf,{asset,mode:'live',providerStale:false}),legacy:null}
+  ?{final:B3.analyze(bars,tf,{asset,mode:'live',providerStale:false,asOf:clock}),legacy:null}
   :makeClassic(ctx.runtime,asset,tf,bars,clock,opts);
  if(engine==='classic'||engine==='indices'){
   const a=classic.final||{},side=a.side,valid=['buy','sell'].includes(side);
