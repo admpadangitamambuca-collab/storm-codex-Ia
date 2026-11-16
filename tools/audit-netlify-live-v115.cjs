@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-/* Read-only verification of Storm Codex Netlify production.  Does not
+/* Post-Netlify Blobs v2 migration re-check 16 Nov 2026.
+ * Read-only verification of Storm Codex Netlify production.  Does not
  * invoke any scheduled workers, modify storage, or disclose secrets. */
 const TARGET='https://codextrading.netlify.app';
 const probes=[
