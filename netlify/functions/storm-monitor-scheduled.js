@@ -75,7 +75,6 @@ async function pull(pair,now=Date.now(),fetcher=fetch){
  replay.checkIdentity(asset,symbol,tf,checked);
  const closedAt=checked.at(-1).t+spec.ms,ageMs=now-closedAt;
  const fresh=ageMs>=0&&ageMs<=spec.ms+45000;
- const session=Date.now();void session;
  return {asset,tf,feedSymbol:symbol,source,bars:checked,closedAt,ageMs,fresh,
   quoteType:b3?'B3 future':'spot/CFD',explicitRealtime:explicitRealtime||!b3,
   fetchedAt:now};
@@ -122,6 +121,13 @@ function settlePending(state,bars,tf){
 async function advance(pair,quote,stored,runtime,otherTf={},macro=null){
  const prev=stored||emptyState(pair),now=quote.fetchedAt,ms=TIMEFRAMES[pair.tf].ms;
  const state=safeJson(prev);state.asset=pair.asset;state.tf=pair.tf;
+ // Never settle a previous expiration's positions with a new B3 contract.
+ if(['WIN','WDO'].includes(pair.asset)&&state.feedSymbol&&state.feedSymbol!==quote.feedSymbol){
+  for(const e of state.signals)if(e.result==='pending'){
+   e.result='incomplete';e.reason='Rolagem do contrato: desfecho não verificável';
+  }
+  state.lastClosedAt=0; // arm new contract rather than importing old candles
+ }
  state.lastAttemptAt=now;state.lastSuccessAt=now;state.source=quote.source;
  state.feedSymbol=quote.feedSymbol;state.closedAt=quote.closedAt;
  state.latestStatus=quote.fresh?'RECENT':'STALE';state.error=null;
@@ -221,7 +227,7 @@ async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),
 exports.activePairs=activePairs;exports.pull=pull;exports.advance=advance;
 exports.calibration=calibration;exports.runCycle=runCycle;
 exports.handler=async()=>{
- const {getStore}=require('@netlify/blobs');
+ const {getStore}=await import('@netlify/blobs');
  const store=getStore('storm-codex-monitor-v115');
  const status=await runCycle({store});
  console.log('Storm 11.5 scheduled cycle',JSON.stringify({checkedAt:status.checkedAt,
