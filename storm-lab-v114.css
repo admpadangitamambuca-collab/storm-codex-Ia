@@ -1,0 +1,34 @@
+/* Storm Codex IA 11.4: isolated research/diagnostics presentation */
+#stormLab114{margin:20px 0;border:1px solid #486270;border-radius:17px;background:linear-gradient(140deg,#11232b,#101b29 62%,#121c2b);box-shadow:0 14px 38px #0004;padding:21px;color:#dbe6ef}
+#stormLab114 *{box-sizing:border-box}
+#stormLab114 .storm-lab-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:17px}
+#stormLab114 .storm-lab-head small{display:block;color:#72d5aa;font-size:10px;letter-spacing:1.7px;font-weight:800}
+#stormLab114 h3{color:#ebf5ee;font-size:21px;letter-spacing:-.4px;margin:6px 0}
+#stormLab114 p{font-size:11px;line-height:1.65;color:#9fb6c1;margin:5px 0}
+#stormLab114 .storm-lab-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+#stormLab114 .storm-lab-kpis>div{min-width:0;border:1px solid #314752;border-radius:11px;background:#10222d;padding:14px}
+#stormLab114 .storm-lab-kpis small{display:block;color:#87bfa9;font-size:9px;letter-spacing:1.15px;margin-bottom:10px;font-weight:800}
+#stormLab114 .storm-lab-kpis strong{font-weight:800;font-size:12px;line-height:1.55;overflow-wrap:anywhere}
+#stormLab114 details{border:1px solid #334758;background:#0d1b29;border-radius:12px;margin:9px 0;padding:12px 14px}
+#stormLab114 summary{cursor:pointer;font-weight:780;color:#e4d0a1;padding:4px 0;font-size:12px;line-height:1.5}
+#stormLab114 details[open] summary{margin-bottom:9px}
+#stormLab114 .storm-lab-reasons{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:7px}
+#stormLab114 .storm-lab-reason{border:1px solid #304255;background:#102536;border-radius:8px;padding:10px;display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#c5d7df}
+#stormLab114 .storm-lab-reason strong{color:#efd29f}
+#stormLab114 .storm-lab-note{color:#96aebc;margin:10px 0;font-size:11px}
+#stormLab114 .storm-lab-scroll{overflow-x:auto;max-height:440px;overflow-y:auto}
+#stormLab114 table{border-collapse:collapse;width:100%;font-size:11px;min-width:570px}
+#stormLab114 th{text-align:left;color:#a9d9c5;font-size:10px;letter-spacing:.35px;background:#182e3a;position:sticky;top:0;z-index:1}
+#stormLab114 td,#stormLab114 th{padding:10px 8px;border-bottom:1px solid #2b4250;vertical-align:top}
+#stormLab114 td:last-child{max-width:360px;overflow-wrap:anywhere}
+#stormLab114 .lab-state{display:inline-block;padding:3px 7px;border:1px solid #566a75;border-radius:6px;font-size:9px;font-weight:800;white-space:nowrap}
+#stormLab114 .lab-ok{color:#75e3b6;border-color:#306c59}
+#stormLab114 .lab-error{color:#ff98a9;border-color:#87515d}
+#stormLab114 .lab-warn{color:#f0cb83;border-color:#756446}
+#stormLab114 .storm-lab-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+#stormLab114 .storm-lab-controls label{display:grid;gap:5px;color:#c5d8df;font-size:10px;font-weight:760;flex:1 1 115px}
+#stormLab114 select,#stormLab114 input{width:100%;max-width:210px;background:#162b39;color:#eef6fa;border:1px solid #536d7b;border-radius:8px;padding:9px;font:inherit}
+#stormLab114 .storm-lab-foot{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px}
+#stormLab114 .storm-lab-foot p{flex:1 1 240px}
+#stormLab114 .storm-v95-btn{white-space:normal}
+@media(max-width:720px){#stormLab114{padding:14px}#stormLab114 .storm-lab-head{align-items:flex-start;flex-direction:column}#stormLab114 .storm-lab-kpis{grid-template-columns:1fr}#stormLab114 .storm-lab-kpis>div{padding:11px}#stormLab114 details{padding:10px}}
