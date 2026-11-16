@@ -8,11 +8,18 @@ const probes=[
   {name:'site',path:'/',kind:'html'},
   {name:'v115-js',path:'/storm-monitor-status-v115.js',kind:'js'},
   {name:'v115-core',path:'/storm-monitor-core-v115.js',kind:'js'},
+  {name:'b3-engine',path:'/b3-indices-v111.js',kind:'js'},
+  {name:'precision',path:'/storm-precision-v112.js',kind:'js'},
+  {name:'v114-css',path:'/storm-lab-v114.css',kind:'static'},
+  {name:'netlify-config',path:'/netlify.toml',kind:'static'},
   {name:'v114-js',path:'/storm-lab-v114.js',kind:'js'},
   {name:'status',path:'/.netlify/functions/storm-status',kind:'json'},
   {name:'b3-live',path:'/.netlify/functions/b3-live-ohlc?asset=WIN&tf=M5',kind:'json'},
+  {name:'b3-wdo-live',path:'/.netlify/functions/b3-live-ohlc?asset=WDO&tf=M5',kind:'json'},
   {name:'b3-reference',path:'/.netlify/functions/b3-quote?symbol=WINZ26',kind:'json'},
   {name:'nasdaq',path:'/.netlify/functions/nasdaq-ohlc?tf=M5',kind:'json'},
+  {name:'nasdaq-m1',path:'/.netlify/functions/nasdaq-ohlc?tf=M1',kind:'json'},
+  {name:'nasdaq-h1',path:'/.netlify/functions/nasdaq-ohlc?tf=H1',kind:'json'},
 ];
 async function probe(item){
   const url=TARGET+item.path, ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),14000);
@@ -26,11 +33,14 @@ async function probe(item){
     bytes:Buffer.byteLength(body),redirected:r.redirected,finalUrl:r.url};
   if(item.kind==='html'){
     result.hasV115=body.includes('Storm Códex IA 11.5')||body.includes('storm-monitor-status-v115.js');
+    result.copyRule83=body.includes('COPY_TURBO_THRESHOLD_EXCLUSIVE=83');
+    result.hasAllThreeEngines=body.includes('StormB3Indices111')&&body.includes('Vortex91Core')&&body.includes('SGEngine');
     result.hasV114=body.includes('storm-lab-v114.js');
     result.hasWorkerClient=body.includes('storm-monitor-status-v115.js');
     result.hasB3Module=body.includes('b3-indices-v111.js');
     result.title=(body.match(/<title>([^<]*)<\/title>/i)||[])[1]||null;
     result.head=body.slice(0,120).replace(/\s+/g,' ');
+  }else if(item.kind==='static'){result.contentIsText=body.length>0&&r.ok;result.beginning=body.slice(0,80).replace(/\s+/g,' ');
   }else if(item.kind==='js'){
     result.validJS=r.ok&&(/javascript|ecmascript|text\/plain/.test(result.contentType||'')||body.includes('Storm Codex'))&&!body.includes('<!doctype html>');
     result.beginning=body.slice(0,100).replace(/\s+/g,' ');
@@ -61,24 +71,11 @@ async function run(){
   monitorHasCompletedCycle:by.status.workerState==='OBSERVING'&&Number.isFinite(by.status.ageMs)&&by.status.ageMs>=0,
   monitorRecent:by.status.workerState==='OBSERVING'&&Number.isFinite(by.status.ageMs)&&by.status.ageMs<16*60000,
   b3RealtimeAvailable:by['b3-live'].status===200&&by['b3-live'].body?.feedVerified==='true',
+  wdoRealtimeAvailable:by['b3-wdo-live'].status===200&&by['b3-wdo-live'].body?.feedVerified==='true',
+  keyFilesGood:by.site.copyRule83&&by.site.hasAllThreeEngines&&by['b3-engine'].validJS&&by.precision.validJS,
   results
  };
  console.log(JSON.stringify(verdict,null,2));
  return verdict;
 }
-async function main(){
- for(let attempt=1;attempt<=6;attempt++){
-  console.log('NETLIFY AUDIT ATTEMPT',attempt);
-  const report=await run();
-  if(report.v1151FilesDeployed){
-   console.log('NETLIFY MIGRATION DETECTED',JSON.stringify({
-    monitorFunctionPublished:report.monitorFunctionPublished,
-    monitorHasCompletedCycle:report.monitorHasCompletedCycle,
-    monitorRecent:report.monitorRecent
-   }));
-   break;
-  }
-  if(attempt<6)await new Promise(resolve=>setTimeout(resolve,12000));
- }
-}
-main().catch(e=>{console.error(e);process.exitCode=1});
+run().catch(e=>{console.error(e);process.exitCode=1});
