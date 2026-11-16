@@ -26,7 +26,9 @@ async function runProbe(fetcher=fetch,now=Date.now()){
     return {t,open:Number(x.open??x.o),high:Number(x.high??x.h),
      low:Number(x.low??x.l),close:Number(x.close??x.c),isOpen:x.isOpen===true};
    });
-   const closed=ticks.filter(x=>x.t+frame[tf][1]<=now-400);
+   const unique=new Map();
+   for(const x of ticks)if(Number.isFinite(x.t)&&x.t+frame[tf][1]<=now-400&&!x.isOpen)unique.set(x.t,x);
+   const closed=[...unique.values()].sort((a,b)=>a.t-b.t);
    const candles=parseBars(closed,tf,now),age=now-(candles.at(-1).t+frame[tf][1]);
    results.push({asset,tf,requested:symbol,returned,ok:true,bars:candles.length,
     lastClosedAt:candles.at(-1).t+frame[tf][1],ageMs:age,currentlyFresh:age>=0&&age<frame[tf][1]+45000});
