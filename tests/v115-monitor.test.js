@@ -85,7 +85,7 @@ test('licensed live endpoint fails closed without exact ticker, no delayed data 
 test('Netlify schedule is declared, status is read-only',()=>{
  const config=fs.readFileSync('netlify.toml','utf8');
  assert.match(config,/storm-monitor-scheduled/);
- assert.match(config,/schedule = "\*\/5 \* \* \* \*"/);
+ assert.match(config,/schedule = "\* \* \* \* \*"/);
  const source=fs.readFileSync('netlify/functions/b3-live-ohlc.js','utf8');
  assert.match(source,/STORM_B3_REDISTRIBUTION_ALLOWED/);
 });
