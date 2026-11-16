@@ -3,7 +3,7 @@
 const {chromium}=require('playwright');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- const results=[],errors=[];
+ const results=[],errors=[];let feedSnapshot=null;
  async function check(label,fn) {
   try{const output=await fn();results.push({label,pass:!!output,output:typeof output==='string'?output:null});}
   catch(e){results.push({label,pass:false,error:String(e.message||e).slice(0,350)})}
@@ -19,7 +19,11 @@ const {chromium}=require('playwright');
  }
  try{
   const {page,context}=await setup({width:1440,height:900});
-  await check('HTML version 11.5 loaded',()=>page.title().then(x=>x.includes('11.5')));
+  await check('HTML source is version 11.5',async()=>(await (await page.request.get('https://codextrading.netlify.app/')).text()).includes('Storm Códex IA 11.5'));
+  await check('Cloud storage status 24 market/TF feeds',async()=>{
+   const response=await page.request.get('https://codextrading.netlify.app/.netlify/functions/storm-status');
+   feedSnapshot=await response.json();return response.status()===200&&feedSnapshot.status==='OBSERVING'&&feedSnapshot.feeds?.length===24;
+  });
   await check('Production engine globals are instantiated',()=>page.evaluate(()=>!!(window.SGEngine&&window.Vortex91Core&&window.StormB3Indices111&&window.StormPrecision112)));
   await check('Copy button rendered',()=>page.locator('#stormCopyBtn').isVisible());
   await check('Turbo button rendered',()=>page.locator('#v83TurboBtn').isVisible());
@@ -67,6 +71,9 @@ const {chromium}=require('playwright');
  }finally{await browser.close()}
  console.log(JSON.stringify({at:new Date().toISOString(),browser:'Playwright Chromium',
   passed:results.filter(x=>x.pass).length,total:results.length,
-  results,scriptErrors:errors.slice(0,30)},null,2));
+  results,scriptErrors:errors.slice(0,30),feedSnapshot:feedSnapshot?{
+   checkedAt:feedSnapshot.checkedAt,healthy:feedSnapshot.healthy,failed:feedSnapshot.failed,persisted:feedSnapshot.persisted,
+   feeds:feedSnapshot.feeds.map(f=>({asset:f.asset,tf:f.tf,state:f.state,error:f.error,lastClosedAt:f.lastClosedAt,count:f.count}))
+  }:null},null,2));
  if(results.some(x=>!x.pass))process.exitCode=1;
 })().catch(e=>{console.error(e);process.exitCode=1});
