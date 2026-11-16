@@ -78,8 +78,8 @@ test('licensed live endpoint fails closed without exact ticker, no delayed data 
   quotedAt:now,bars};
  assert.equal(b3live.parseProvider(source,'WIN',tf,contract,now).feedVerified,true);
  assert.throws(()=>b3live.parseProvider({...source,symbol:'WDOZ26'},'WIN',tf,contract,now),/Ticker/);
- assert.throws(()=>b3live.parseProvider({...source,realtime:false},'WIN',tf,contract,now),/tempo real/);
- assert.throws(()=>b3live.parseProvider({...source,delayMinutes:15},'WIN',tf,contract,now),/tempo real/);
+ assert.throws(()=>b3live.parseProvider({...source,realtime:false},'WIN',tf,contract,now),/atraso|tempo real/);
+ assert.throws(()=>b3live.parseProvider({...source,delayMinutes:15},'WIN',tf,contract,now),/atraso|tempo real/);
  assert.throws(()=>b3live.parseProvider({...source,quotedAt:0},'WIN',tf,contract,now),/timestamp/);
 });
 test('Netlify schedule is declared, status is read-only',()=>{
