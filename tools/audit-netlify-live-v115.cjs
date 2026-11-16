@@ -7,6 +7,7 @@ const TARGET='https://codextrading.netlify.app';
 const probes=[
   {name:'site',path:'/',kind:'html'},
   {name:'v115-js',path:'/storm-monitor-status-v115.js',kind:'js'},
+  {name:'v115-core',path:'/storm-monitor-core-v115.js',kind:'js'},
   {name:'v114-js',path:'/storm-lab-v114.js',kind:'js'},
   {name:'status',path:'/.netlify/functions/storm-status',kind:'json'},
   {name:'b3-live',path:'/.netlify/functions/b3-live-ohlc?asset=WIN&tf=M5',kind:'json'},
@@ -54,6 +55,7 @@ async function run(){
  const verdict={
   inspectedAt:new Date().toISOString(),site:TARGET,
   siteReachable:by.site.status===200&&by.site.bytes>4000,
+  v1151FilesDeployed:by['v115-core'].status===200&&by['v115-core'].validJS,
   v115Deployed:by.site.status===200&&by.site.hasV115&&by['v115-js'].validJS,
   monitorFunctionPublished:by.status.status===200&&by.status.workerState!==null,
   monitorHasCompletedCycle:by.status.workerState==='OBSERVING'&&Number.isFinite(by.status.ageMs)&&by.status.ageMs>=0,
