@@ -1,0 +1,19 @@
+name: Audit published codextrading.netlify.app
+on:
+  push:
+    branches:
+      - audit/netlify-live-validation-20261116
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe published UI, JS, 5 functions and actual persisted monitor state
+        run: node tools/audit-netlify-live-v115.cjs
