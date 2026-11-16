@@ -64,5 +64,21 @@ async function run(){
   results
  };
  console.log(JSON.stringify(verdict,null,2));
+ return verdict;
 }
-run().catch(e=>{console.error(e);process.exitCode=1});
+async function main(){
+ for(let attempt=1;attempt<=6;attempt++){
+  console.log('NETLIFY AUDIT ATTEMPT',attempt);
+  const report=await run();
+  if(report.v1151FilesDeployed){
+   console.log('NETLIFY MIGRATION DETECTED',JSON.stringify({
+    monitorFunctionPublished:report.monitorFunctionPublished,
+    monitorHasCompletedCycle:report.monitorHasCompletedCycle,
+    monitorRecent:report.monitorRecent
+   }));
+   break;
+  }
+  if(attempt<6)await new Promise(resolve=>setTimeout(resolve,12000));
+ }
+}
+main().catch(e=>{console.error(e);process.exitCode=1});
