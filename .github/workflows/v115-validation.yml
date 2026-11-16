@@ -1,0 +1,16 @@
+name: V11.5 Integration validation
+on:
+  push:
+    branches:
+      - feature/continuous-replay-b3-v115-20261116
+  pull_request:
+  workflow_dispatch:
+jobs:
+  v115:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/v115-runtime.test.js
