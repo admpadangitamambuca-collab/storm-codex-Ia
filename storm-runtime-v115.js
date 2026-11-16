@@ -7,8 +7,21 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 const path=require('node:path');
 const originalDate=Date;
+function readBundledFile(name){
+ const candidates=[
+  path.join(__dirname,name),
+  path.join(__dirname,'..',name),
+  path.join(__dirname,'../..',name),
+  path.join(process.cwd(),name),
+  path.join('/var/task',name)
+ ];
+ for(const candidate of candidates){
+  if(fs.existsSync(candidate))return fs.readFileSync(candidate,'utf8');
+ }
+ throw Error('Arquivo de motor não encontrado no bundle Netlify: '+name);
+}
 function createRuntime(options={}){
- const source=options.html||fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
+ const source=options.html||readBundledFile('index.html');
  const modules=[...source.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
    .map(m=>m[1]).filter(x=>x.trim());
  const inert=()=>{};
@@ -72,7 +85,7 @@ function createRuntime(options={}){
  // Load the production Precision extension after original inline cores.
  // Only repository-local trusted source, no remote scripts or broker access.
  try{
-  const precisionSource=fs.readFileSync(path.join(__dirname,'storm-precision-v112.js'),'utf8');
+  const precisionSource=readBundledFile('storm-precision-v112.js');
   vm.runInContext(precisionSource,sandbox,{filename:'storm-precision-v112.js',timeout:1500});
  }catch(e){errors.push({script:'precision-v112',message:String(e.message||e).slice(0,240)})}
  const required=['SGEngine','SGV6Core','SGV72Core','Vortex83Turbo','Vortex91Core','StormPrecision112'];

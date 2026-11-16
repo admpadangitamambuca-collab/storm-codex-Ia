@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const monitor=require('../netlify/functions/storm-monitor-scheduled.js');
+const monitor=require('../storm-monitor-core-v115.js');
 const b3live=require('../netlify/functions/b3-live-ohlc.js');
 const B3=require('../b3-indices-v111.js'),fs=require('node:fs');
 function mockStore(){

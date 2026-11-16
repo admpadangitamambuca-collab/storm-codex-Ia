@@ -3,9 +3,9 @@
  * Published deploy only. Keeps site-scoped research memory in Netlify Blobs.
  * No broker connection, no credentials in UI, no historical signal fabrication.
  */
-const B3=require('../../b3-indices-v111.js');
-const {createRuntime}=require('../../storm-runtime-v115.js');
-const replay=require('../../storm-replay-v115.js');
+const B3=require('./b3-indices-v111.js');
+const {createRuntime}=require('./storm-runtime-v115.js');
+const replay=require('./storm-replay-v115.js');
 const TIMEFRAMES={M1:{ms:60000,p:'1m'},M5:{ms:300000,p:'5m'},M15:{ms:900000,p:'15m'},H1:{ms:3600000,p:'1h'}};
 const ASSETS=['XAUUSD','EURUSD','USDJPY','AUDUSD','WIN','WDO'];
 const bounded=s=>String(s??'').slice(0,240);
@@ -226,11 +226,4 @@ async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),
 }
 exports.activePairs=activePairs;exports.pull=pull;exports.advance=advance;
 exports.calibration=calibration;exports.runCycle=runCycle;
-exports.handler=async()=>{
- const {getStore}=await import('@netlify/blobs');
- const store=getStore('storm-codex-monitor-v115');
- const status=await runCycle({store});
- console.log('Storm 11.5 scheduled cycle',JSON.stringify({checkedAt:status.checkedAt,
-  healthy:status.healthy,failed:status.failed,persisted:status.persisted}));
- return {statusCode:200,body:'OK'};
-};
+// Invoked only from modern Netlify Functions wrapper, never directly by HTTP.
