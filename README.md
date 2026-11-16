@@ -1,3 +1,25 @@
+# Storm Códex IA 11.6 — ouro spot atualizado, monitor M1 e auditoria de feeds (16/11/2026)
+
+## Situação real e solução do atraso XAUUSD
+Em 16/11/2026 às 22h44 UTC, o OHLC e os ticks XAUUSD da Biquote estavam atrasados cerca de 47 minutos ou sem atualização; uma chamada estrita ao tick retornou HTTP 404. A API independente XAUS.com forneceu preço spot recente, com cerca de 21 segundos de idade. A razão do atraso era **a fonte de dados**, não um erro na renderização do gráfico.
+
+A versão 11.6 passou a mostrar **preço spot indicativo recente** numa faixa própria do painel XAUUSD, com carimbo de tempo e verificações do servidor em `/.netlify/functions/xau-health?tf=M5`. Em separado, exibe o último candle fechado da Biquote e sua idade. O spot fresco **NÃO é convertido em OHLC** e **NÃO alimenta os sinais Clássico/Turbo/Copy**, porque um preço isolado não demonstra máxima, mínima ou sequência de negócios dentro do minuto. O feed de velas Biquote só é elegível quando tiver 60+ candles reais, identidade XAUUSD correta, timeframe correto e último fechamento recente. Indicador de preço atualizado **não significa motor habilitado**. A página oferece atualizar manualmente os dados.
+
+## Copy Trade e monitor
+Uma única Scheduled Function verifica 4 pares Forex/ouro no timeframe M1 **a cada minuto**, e verifica todos os 24 pares/timeframes (inclusive WIN/WDO) em minutos divisíveis por 5. Estados parciais são fundidos no armazenamento Netlify Blobs, sem apagar o quadro dos outros períodos. O resumo apresenta sinais fictícios pendentes/encerrados, motivos de bloqueio e defasagem do último ciclo. A regra original Turbo com score **estritamente >83/100** está preservada. Essa execução depende do deploy via Git e da disponibilidade/cotas do Netlify, e não significa ordens reais ou garantia de execução de todos os candles.
+
+## WIN/WDO e backtesting
+WIN/WDO apresentam último fechamento verificável no módulo informativo da B3, mas **não têm OHLC intradiário autorizado disponível** no site. A infraestrutura opcional do feed de contrato explícito continua pronta, exigindo `STORM_B3_PROVIDER_URL`, `STORM_B3_PROVIDER_TOKEN` e a confirmação legal de permissão de distribuição. Nunca usar fechamento diário ou índice proxy para fabricar sinais M1/M5.
+
+O backtest permanece causal usando os motores reais e controle de vazamento temporal, mas **não houve validação estatística robusta de lucro nem reconstrução independente de notícias/calendário históricos**. Ele só dá resultados quando existem candles verificáveis e os filtros reais aprovam. Nenhum resultado financeiro é garantido.
+
+## Instalação
+1. Fazer deploy **via integração Git → branch main** no site Netlify: https://codextrading.netlify.app/.
+2. Confirmar `/.netlify/functions/storm-status` com ciclo recente e `/.netlify/functions/xau-health?tf=M5` com `spot.fresh` e `ohlc.fresh` **separados**.
+3. Na aba XAUUSD, conferir o painel de preço spot, que é somente referência, e o horário da vela fechada do motor.
+4. O ZIP contém o código fonte completo; upload estático não instala Functions cron nem Blobs. Preferir Netlify com build integrado ao GitHub.
+
+---
 # Storm Códex IA 11.5 — Monitor persistente, replay dos motores e B3 autorizada (16/11/2026)
 
 ## Entregas técnicas verificáveis
