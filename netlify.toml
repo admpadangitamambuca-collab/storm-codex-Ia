@@ -1,4 +1,4 @@
-# Storm Codex IA v11.5 - deploy Git required for scheduled Functions and Blobs
+# Storm Codex IA v11.6 - deploy Git required for scheduled Functions and Blobs
 [build]
   publish = "."
   functions = "netlify/functions"
@@ -11,4 +11,4 @@
   included_files = ["index.html", "storm-precision-v112.js"]
 
 [functions."storm-monitor-scheduled"]
-  schedule = "*/5 * * * *"
+  schedule = "* * * * *"
