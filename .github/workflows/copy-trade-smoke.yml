@@ -7,6 +7,9 @@ on:
     paths:
       - index.html
       - tests/copy-trade-smoke.cjs
+      - tests/v114-lab.test.js
+      - storm-lab-v114.js
+      - storm-lab-v114.css
       - .github/workflows/copy-trade-smoke.yml
   workflow_dispatch:
 jobs:
@@ -26,13 +29,13 @@ jobs:
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-          node --test tests/v112-smoke.test.js
+          node --test tests/v112-smoke.test.js tests/v114-lab.test.js
       - name: Validate standalone package generated from current main
         run: |
           mkdir -p dist/smoke
           mkdir -p dist/smoke/netlify/functions
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js dist/smoke/
-          cp netlify/functions/nasdaq-ohlc.js dist/smoke/netlify/functions/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css netlify.toml dist/smoke/
+          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js dist/smoke/netlify/functions/
           (cd dist/smoke && zip -q -r ../storm-smoke.zip .)
           unzip -t dist/storm-smoke.zip
           unzip -p dist/storm-smoke.zip index.html | cmp - index.html
@@ -40,3 +43,6 @@ jobs:
           unzip -p dist/storm-smoke.zip storm-nasdaq-v112.js | cmp - storm-nasdaq-v112.js
           unzip -p dist/storm-smoke.zip storm-precision-v112.js | cmp - storm-precision-v112.js
           unzip -p dist/storm-smoke.zip netlify/functions/nasdaq-ohlc.js | cmp - netlify/functions/nasdaq-ohlc.js
+          unzip -p dist/storm-smoke.zip storm-lab-v114.js | cmp - storm-lab-v114.js
+          unzip -p dist/storm-smoke.zip storm-lab-v114.css | cmp - storm-lab-v114.css
+          unzip -p dist/storm-smoke.zip netlify/functions/b3-quote.js | cmp - netlify/functions/b3-quote.js
