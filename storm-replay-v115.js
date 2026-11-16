@@ -136,6 +136,7 @@ function settlement(bars,start,signal,tf,cost){
   if(touchStop&&touchTarget){result='ambiguous';break;}
   if(touchStop||touchTarget){result=touchTarget?'win':'loss';exit=touchTarget?target:stop;break;}
  }
+ if(result==='expired'&&max<start+6)result='pending';
  return {result,reason:result==='ambiguous'?'TP e SL na mesma vela; ordem desconhecida':null,
   lastIndex:last,open,stop,target,R:exit===null?null:((exit-open)*side-cost)/risk};
 }
