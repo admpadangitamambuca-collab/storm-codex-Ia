@@ -245,8 +245,9 @@
   const tick=product==='WIN'?5:.5;
   const stopDist=Math.ceil(Math.max(atr*.95,tick*3)/tick)*tick;
   const targetDist=Math.ceil(stopDist*1.45/tick)*tick;
-  const nowBrazil=saoPauloDate();
-  const dayAllowed=localDay.format(new Date(last.t+PERIOD[tf].ms))===localDay.format(new Date());
+  const asOf=Number.isFinite(meta.asOf)?meta.asOf:Date.now();
+  const nowBrazil=saoPauloDate(asOf);
+  const dayAllowed=localDay.format(new Date(last.t+PERIOD[tf].ms))===localDay.format(new Date(asOf));
   const todayBusiness=business(nowBrazil);
   const fresh=!meta.providerStale;
   const priceOnTick=Math.abs(last.close/tick-Math.round(last.close/tick))<0.0001;
