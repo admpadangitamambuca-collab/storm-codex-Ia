@@ -146,9 +146,36 @@
    futures:false,mode:'live',fetchedAt:Date.now(),providerTimestamp:closedAt,
    transport:'Biquote OHLC '+contract.symbol+' · '+spec.p};
  }
+ async function licensed(product,tf,signal){
+  // Opt-in via same-origin Netlify Function; no provider credentials in the browser.
+  const contract=contractFor(product);
+  const url='/.netlify/functions/b3-live-ohlc?asset='+encodeURIComponent(product)+'&tf='+encodeURIComponent(tf);
+  const data=await request(url,signal);
+  if(data.feedSymbol!==contract.symbol||data.requestedAsset!==product||data.requestedTf!==tf||
+    data.feedVerified!==true||data.verifiedRealtime!==true||data.isIntraday!==true)
+   throw Error('Feed licenciado não comprovou contrato, período e tempo real');
+  const bars=normalize(data.candles,tf);
+  if(bars.length<46||bars.at(-1).t+PERIOD[tf].ms!==data.closedAt)
+   throw Error('Feed licenciado com OHLC insuficiente ou carimbo incorreto');
+  const expectedTick=contract.tick;
+  if(bars.some(b=>Math.abs(b.close/expectedTick-Math.round(b.close/expectedTick))>1e-5))
+   throw Error('Tick do feed B3 é inválido');
+  if(product==='WIN'&&(bars.at(-1).close<10000||bars.at(-1).close>500000))
+   throw Error('Preço WIN fora da faixa plausível');
+  if(product==='WDO'&&(bars.at(-1).close<1000||bars.at(-1).close>20000))
+   throw Error('Preço WDO fora da faixa plausível');
+  const stale=Date.now()-data.closedAt>PERIOD[tf].ms+45000;
+  return {...data,asset:product,candles:bars,mode:'live',source:'B3 licenciado · '+contract.symbol,
+   feedSymbol:contract.symbol,feedVerified:true,providerStale:stale,
+   contractExpiry:contract.expiry,contractLastTrade:contract.lastTrade,
+   contractPointValue:contract.pointValue,contractTick:contract.tick};
+ }
  async function load(product,tf,signal){
   if(!TYPES.includes(product))throw Error('Motor B3 exclusivo do WIN/WDO');
   if(!PERIOD[tf])throw Error('Timeframe B3 não suportado');
+  let licensedProblem='';
+  try{return await licensed(product,tf,signal)}
+  catch(e){if(signal?.aborted)throw e;licensedProblem=String(e?.message||e).slice(0,160)}
   const first=contractFor(product),attempts=[];
   // Priorizar OHLC do contrato calculado: catálogo Biquote pode ficar indisponível.
   const candidate={...first};
@@ -173,7 +200,7 @@
     return {...data,rollNote:'Contrato futuro alternativo com OHLC válido; confirmar liquidez'};
    }catch(e){if(signal?.aborted)throw e;attempts.push(symbol+': '+e.message);}
   }
-  throw Error(product+' sem candles intradiários gratuitos confirmados na Biquote. '+attempts.join(' | '));
+  throw Error(product+' sem feed intradiário verificável. Licenciado: '+licensedProblem+'. Biquote: '+attempts.join(' | '));
  }
  function ema(closes,n){const k=2/(n+1),out=[];let value=closes[0];for(const c of closes){value=value+(c-value)*k;out.push(value);}return out;}
  function analyze(bars,tf,meta={}){
@@ -218,8 +245,9 @@
   const tick=product==='WIN'?5:.5;
   const stopDist=Math.ceil(Math.max(atr*.95,tick*3)/tick)*tick;
   const targetDist=Math.ceil(stopDist*1.45/tick)*tick;
-  const nowBrazil=saoPauloDate();
-  const dayAllowed=localDay.format(new Date(last.t+PERIOD[tf].ms))===localDay.format(new Date());
+  const asOf=Number.isFinite(meta.asOf)?meta.asOf:Date.now();
+  const nowBrazil=saoPauloDate(asOf);
+  const dayAllowed=localDay.format(new Date(last.t+PERIOD[tf].ms))===localDay.format(new Date(asOf));
   const todayBusiness=business(nowBrazil);
   const fresh=!meta.providerStale;
   const priceOnTick=Math.abs(last.close/tick-Math.round(last.close/tick))<0.0001;
@@ -242,5 +270,5 @@
    horizon:3,riskMeta:{rr:targetDist/stopDist,netRR:targetDist/stopDist},
    t:last.t,oneCandleProjection:null,sourceEngine:'B3-111',preliminary:false};
  }
- return Object.freeze({version:'11.1',TYPES,PERIOD,contractFor,winExpiry,wdoExpiry,holiday,business,normalize,analyze,load,trustedSymbol});
+ return Object.freeze({version:'11.5',TYPES,PERIOD,contractFor,winExpiry,wdoExpiry,holiday,business,normalize,analyze,load,loadLicensed:licensed,trustedSymbol});
 });

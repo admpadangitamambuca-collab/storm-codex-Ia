@@ -1,0 +1,19 @@
+name: V11.5 Integration validation
+on:
+  push:
+    branches:
+      - feature/continuous-replay-b3-v115-20261116
+  pull_request:
+  workflow_dispatch:
+jobs:
+  v115:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js
+      - run: node tests/copy-trade-smoke.cjs
+      - run: node --test tests/v112-smoke.test.js tests/v113-audit.test.js tests/v114-lab.test.js
+      - run: node --check storm-replay-v115.js && node --check storm-runtime-v115.js && node --check netlify/functions/storm-monitor-scheduled.js && node --check netlify/functions/b3-live-ohlc.js

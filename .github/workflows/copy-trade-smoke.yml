@@ -10,6 +10,12 @@ on:
       - tests/v114-lab.test.js
       - storm-lab-v114.js
       - storm-lab-v114.css
+      - storm-monitor-status-v115.js
+      - storm-runtime-v115.js
+      - storm-replay-v115.js
+      - netlify/functions/storm-monitor-scheduled.js
+      - netlify/functions/b3-live-ohlc.js
+      - netlify.toml
       - .github/workflows/copy-trade-smoke.yml
   workflow_dispatch:
 jobs:
@@ -29,13 +35,13 @@ jobs:
           node tests/manual_refresh_regression.cjs
           node tests/asset-specialist-regression.cjs
           node tests/outcome-learning-regression.cjs
-          node --test tests/v112-smoke.test.js tests/v114-lab.test.js
+          node --test tests/v112-smoke.test.js tests/v114-lab.test.js tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js
       - name: Validate standalone package generated from current main
         run: |
           mkdir -p dist/smoke
           mkdir -p dist/smoke/netlify/functions
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css netlify.toml dist/smoke/
-          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js dist/smoke/netlify/functions/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-runtime-v115.js storm-replay-v115.js package.json netlify.toml dist/smoke/
+          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.js netlify/functions/storm-status.js dist/smoke/netlify/functions/
           (cd dist/smoke && zip -q -r ../storm-smoke.zip .)
           unzip -t dist/storm-smoke.zip
           unzip -p dist/storm-smoke.zip index.html | cmp - index.html
@@ -46,3 +52,5 @@ jobs:
           unzip -p dist/storm-smoke.zip storm-lab-v114.js | cmp - storm-lab-v114.js
           unzip -p dist/storm-smoke.zip storm-lab-v114.css | cmp - storm-lab-v114.css
           unzip -p dist/storm-smoke.zip netlify/functions/b3-quote.js | cmp - netlify/functions/b3-quote.js
+          unzip -p dist/storm-smoke.zip storm-monitor-status-v115.js | cmp - storm-monitor-status-v115.js
+          unzip -p dist/storm-smoke.zip netlify/functions/storm-monitor-scheduled.js | cmp - netlify/functions/storm-monitor-scheduled.js

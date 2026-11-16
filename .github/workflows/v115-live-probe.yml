@@ -1,0 +1,17 @@
+name: V11.5 Live feed probe (non-blocking)
+on:
+  push:
+    branches:
+      - feature/continuous-replay-b3-v115-20261116
+  workflow_dispatch:
+jobs:
+  check-public-feeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test actual Biquote public endpoints for XAU/EUR/WIN/WDO
+        run: node tools/live-feed-probe-v115.cjs
