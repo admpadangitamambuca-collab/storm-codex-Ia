@@ -1,3 +1,31 @@
+# Storm Códex IA 11.4 — Laboratório de Confiabilidade (16/11/2026)
+
+## O que foi implementado
+- **Copy Trade:** preservado somente fictício com confluência Turbo estritamente **>83/100**. As mesmas regras técnicas continuam, porém a função de avaliação passa a registrar códigos específicos de bloqueio (score, níveis, geometria, OHLC defasado/inválido, lacunas, modo não-live e direção). As leituras por vela mantêm deduplicação ao usar Refresh.
+- **Central de cotações:** painel dentro da aba Copy Trade com status dos 16 pares (XAUUSD/EURUSD/USDJPY/AUDUSD × M1/M5/M15/H1), fonte, idade da última vela e motivo da última avaliação. Baseado no feed observado no navegador; não confirma disponibilidade externa sem teste real.
+- **Resultados auditáveis:** faixas de score Turbo, operações simuladas resolvidas em TP/stop, retorno médio em R, taxa de takes e intervalo Wilson 95% para contextualizar tamanho da amostra. Não mistura pendentes, expiradas ou ambíguas como vitórias. Não converte score heurístico em probabilidade validada.
+- **Pesquisa histórica independente:** baseline EMA 9/21 + ATR14 sobre **candles fechados já recebidos**, entrada na próxima abertura, até seis velas, sem assumir ordem dos toques de TP/stop na mesma vela, sem posições sobrepostas nem interpolação de lacunas. É um laboratório de engenharia, **não um backtest fiel dos motores Clássico/Turbo/Índices**. P&L é expresso em R; custos podem ser configurados em unidade de preço (padrão zero).
+- **Exportação JSON** de estado de saúde, operações simuladas, leituras e pesquisa local para auditoria/reprodução.
+- **Código modular:** laboratório em storm-lab-v114.js e CSS isolado storm-lab-v114.css; preserva scripts legados e módulos dos motores, sem alterar os cálculos dos sinais.
+- **CI/ZIP** atualizados com dependências do laboratório e testes tests/v114-lab.test.js. A publicação oficial por GitHub/Netlify é preferível ao ZIP estático porque o site exige as Netlify Functions do Nasdaq e WIN/WDO.
+
+## Como usar no computador
+1. Abra a versão publicada e clique em **Copy Trade**.
+2. Expanda **Laboratório de confiabilidade**. Consulte as causas das leituras e a central de 16 feeds antes de confiar no status do simulador.
+3. Aguarde fechamentos novos com a página aberta; **Refresh** reavalia o mesmo candle, sem criar operação retroativa. O primeiro candle de cada período arma o monitor.
+4. Em "Pesquisa histórica" escolha ativo, período e custo, e execute o baseline. Para investigar mudanças, exporte o diagnóstico JSON.
+5. Para testes locais, use Node 22: node --test tests/v114-lab.test.js e node tests/copy-trade-smoke.cjs. O script do laboratório não envia ordens.
+
+## Não implementado ou ainda pendente
+- **Monitoramento 24/7 e memória compartilhada entre aparelhos**: ainda não existem backend persistente, worker agendado ou autenticação de memória; o navegador fechado não observa novos sinais. Isso exigirá banco de dados, serviço de processamento e política explícita de custos e privacidade.
+- **Backtest integral dos motores atuais com precisão de execução**: os motores têm dependências multi-timeframe, calendário, notícias e estado de feed que exigem reconstituição causal histórica e histórico licenciado. A pesquisa EMA disponível é isolada, não prova acurácia desses motores.
+- **Cotações reais verificadas**: não foi comprovado feed intradiário gratuito/sem login em tempo real para WIN/WDO; Nasdaq ^NDX pode atrasar. O laboratório reporta falhas e não fabrica candles nem remove as travas existentes.
+- Testes automatizados de lógica e pacote **não equivalem** a ensaio em navegador na URL publicada ou validação financeira com spreads/slippage de corretora.
+
+A base anterior 11.3 segue documentada abaixo.
+
+---
+
 # Storm Códex IA 11.3 — auditoria e B3 WIN/WDO (12/11/2026)
 
 ## O que foi efetivamente corrigido
