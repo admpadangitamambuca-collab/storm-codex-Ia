@@ -48,8 +48,9 @@ jobs:
           node --check storm-monitor-status-v115.js
           node --check storm-runtime-v115.js
           node --check storm-replay-v115.js
-          node --check netlify/functions/storm-monitor-scheduled.js
-          node --check netlify/functions/storm-status.js
+          node --check storm-monitor-core-v115.js
+          node --check netlify/functions/storm-monitor-scheduled.mjs
+          node --check netlify/functions/storm-status.mjs
           node --check netlify/functions/b3-live-ohlc.js
       - name: Verify Netlify Blobs dependency resolves
         run: npm install --ignore-scripts --no-audit --no-fund
@@ -57,8 +58,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/netlify/netlify/functions dist/netlify/tools
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-runtime-v115.js storm-replay-v115.js package.json netlify.toml dist/netlify/
-          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.js netlify/functions/storm-status.js dist/netlify/netlify/functions/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-runtime-v115.js storm-replay-v115.js storm-monitor-core-v115.js package.json netlify.toml dist/netlify/
+          cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.mjs netlify/functions/storm-status.mjs dist/netlify/netlify/functions/
           cp tools/replay-v115.cjs tools/live-feed-probe-v115.cjs dist/netlify/tools/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
           STORM CODEX IA 11.5 - MONITOR AGENDADO E REPLAY DOS MOTORES
@@ -83,10 +84,10 @@ jobs:
           required=['index.html','sw.js','learning-v108.js','b3-indices-v111.js',
           'storm-nasdaq-v112.js','storm-precision-v112.js','storm-b3-quote-v113.js',
           'storm-lab-v114.js','storm-lab-v114.css','storm-monitor-status-v115.js',
-          'storm-runtime-v115.js','storm-replay-v115.js','package.json','netlify.toml',
+          'storm-runtime-v115.js','storm-replay-v115.js','storm-monitor-core-v115.js','package.json','netlify.toml',
           'netlify/functions/nasdaq-ohlc.js','netlify/functions/b3-quote.js',
-          'netlify/functions/b3-live-ohlc.js','netlify/functions/storm-monitor-scheduled.js',
-          'netlify/functions/storm-status.js','tools/replay-v115.cjs']
+          'netlify/functions/b3-live-ohlc.js','netlify/functions/storm-monitor-scheduled.mjs',
+          'netlify/functions/storm-status.mjs','tools/replay-v115.cjs']
           missing=[r for r in required+local if not (d/r).is_file()]
           if missing: raise SystemExit('Pacote incompleto: '+', '.join(sorted(set(missing))))
           if 'storm-lab-v114.css' not in html: raise SystemExit('CSS ausente')
