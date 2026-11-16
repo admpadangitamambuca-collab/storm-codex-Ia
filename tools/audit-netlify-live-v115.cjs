@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-/* Post-Netlify Blobs v2 migration re-check 16 Nov 2026.
+/* Final external post-merge production deployment check, 16 Nov 2026.
  * Read-only verification of Storm Codex Netlify production.  Does not
  * invoke any scheduled workers, modify storage, or disclose secrets. */
 const TARGET='https://codextrading.netlify.app';
@@ -11,7 +11,7 @@ const probes=[
   {name:'v114-js',path:'/storm-lab-v114.js',kind:'js'},
   {name:'status',path:'/.netlify/functions/storm-status',kind:'json'},
   {name:'b3-live',path:'/.netlify/functions/b3-live-ohlc?asset=WIN&tf=M5',kind:'json'},
-  {name:'b3-reference',path:'/.netlify/functions/b3-quote?asset=WIN',kind:'json'},
+  {name:'b3-reference',path:'/.netlify/functions/b3-quote?symbol=WINZ26',kind:'json'},
   {name:'nasdaq',path:'/.netlify/functions/nasdaq-ohlc?tf=M5',kind:'json'},
 ];
 async function probe(item){
