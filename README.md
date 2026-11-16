@@ -1,3 +1,64 @@
+# Storm Códex IA 11.5 — Monitor persistente, replay dos motores e B3 autorizada (16/11/2026)
+
+## Entregas técnicas verificáveis
+1. **Execução agendada:** uma Netlify Scheduled Function (storm-monitor-scheduled) consulta candles em ciclos de 5 minutos, com informações de 4 pares Forex/ouro e de WIN/WDO em M1/M5/M15/H1 quando disponível. Não roda localmente e não depende da janela do usuário estar aberta, mas depende de site publicado por Git, limites Netlify e respostas das fontes. É coleta/reconciliação periódica, **não streaming de ticks 24/7 garantido**.
+2. **Memória persistente do monitor:** Netlify Blobs guarda por ativo/timeframe o último candle, diagnósticos de fonte, sinais fictícios observados prospectivamente e desfechos posteriores. Na primeira execução, arma o monitor e não cria sinais retroativos. A memória cloud é compartilhada pelo aplicativo (não contém contas privadas), **não se funde automaticamente com o localStorage do usuário**. Painel de status remoto na aba Copy Trade informa último ciclo e falhas reais. Sem registro de execução, mostra "não ativado" em vez de fingir monitoramento.
+3. **Motores originais em ambiente isolado:** storm-runtime-v115.js carrega o próprio código inline do index.html em um sandbox de Node vm com DOM e rede inertes. storm-replay-v115.js chama SGEngine, Vortex83Turbo, Vortex91Core e StormB3Indices111 para replay causal. Rejeita tickers trocados, candles abertos, histórico misto de vencimentos, lacunas e entrada/stop/alvo inconsistentes. Executa simulações com abertura da vela seguinte, resultados ambíguos, spread e custos parametrizáveis, treino/validação separados cronologicamente e embargo de seis candles.
+4. **B3 com feed licenciado opcional:** nova Function b3-live-ohlc e adaptador browser preferem OHLC de contrato B3 identificado quando um fornecedor autorizado estiver configurado. Exigem retorno real-time explícito, timestamp verificável, preço/tick e contrato vigente exato. **Sem fornecedor e permissão de redistribuição, não é operacional**; continua diagnóstico/último fechamento (EOD) separado. Biquote permanece como tentativa pública sem garantia.
+5. **CI/release:** testes de lógica dos motores, replay, rollover, Copy Trade, memória, pacote Netlify e scripts. Nenhuma ordem é enviada ao MT5 ou corretora.
+
+## O que ainda não está comprovado
+- **Deploy Netlify público e feed em produção**: verificações automatizadas GitHub são de código e fixtures; para comprovar cron e Blobs é necessário publicar via Git e observar o status real em /.netlify/functions/storm-status e logs de Scheduled Functions. Netlify Drop/ZIP estático não instala funções/cron.
+- **WIN/WDO sem custos, login ou licença:** não há prova de API pública gratuita com OHLC intradiário em tempo real. A B3 licencia market data; não apresentar D-1/delay como cotação live. Configuração do provedor é necessária.
+- **Backtest financeiro validado:** o replay usa as funções reais, mas a memória adaptativa e o calendário/notícias históricos não são reconstituídos automaticamente. Sem histórico macro verificado, os próprios bloqueios do Turbo impedem aprovação de sinais. O relatório é pesquisa, não evidência de lucro ou precisão garantida.
+- **Observação de cada vela M1**: a agenda padrão de cinco minutos não verifica todas as velas M1 em tempo oportuno. A cobertura é amostrada; não contabilizar lacunas como operações e não usar para scalping executável.
+- **Dados de usuário compartilhados**: o sistema não sincroniza credenciais, trades pessoais ou localStorage privado; somente estado de pesquisa do mercado.
+
+## Publicação do monitor no Netlify
+1. Conecte GitHub main como fonte do site Netlify e confirme a opção Functions. Build com Node >=22.12.0 e npm instala o pacote fixado @netlify/blobs.
+2. No painel Netlify > Functions, confirme que storm-monitor-scheduled aparece como Scheduled, com cron `*/5 * * * *` (UTC); clique em **Run now** para testar o primeiro ciclo. Verifique seu consumo/cotas.
+3. Abra a aba Copy Trade > Monitor de Mercado 11.5. O status lê a função de saúde, exibindo se a execução ocorreu. Sem deploy publicado ou Blobs funcionais, o painel deve continuar avisando.
+4. Consulte os erros dos feeds XAUUSD/EURUSD/USDJPY/AUDUSD/WIN/WDO e seus períodos. Mercado fechado, candles sem identidade e atraso são bloqueios, não operações simuladas.
+5. **Opcional apenas se tiver contrato que permita redistribuição dos dados B3:** defina as variáveis secretas STORM_B3_PROVIDER_URL (endpoint HTTPS com query symbol, interval, limit), STORM_B3_PROVIDER_TOKEN (Bearer da sua conta), STORM_B3_PROVIDER_AUTHORIZED=true para ingestão interna e STORM_B3_REDISTRIBUTION_ALLOWED=true somente se você detiver direitos legais. O JSON do fornecedor deve ter símbolo exato, intervalo exato, `realtime: true`, `delayMinutes: 0`, `quotedAt` em milissegundos, `exchange: "B3"` e `bars` OHLC fechados. **Não coloque tokens no HTML ou GitHub.** Sem contrato adequado, deixe as flags desligadas.
+
+## Executar backtest cronológico no computador
+É necessário Node.js 22+. Tenha um arquivo JSON de candles fechados e confiáveis de um único ativo/contrato:
+
+```json
+{
+  "asset": "EURUSD",
+  "tf": "M5",
+  "feedSymbol": "EURUSD",
+  "candles": [
+    {"t": 1794484800000, "open": 1.1001, "high": 1.1004, "low": 1.0998, "close": 1.1002}
+  ],
+  "mtf": {"M15": []}
+}
+```
+
+O exemplo acima é **apenas de formato**: o replay requer pelo menos 60 velas fechadas, preços e timestamps reais, e histórico MTF opcional validado. Não inclua arrays vazios em mtf.
+
+```bash
+node tools/replay-v115.cjs historico.json classic
+node tools/replay-v115.cjs historico.json turbo
+node tools/replay-v115.cjs historico-indices.json indices
+```
+
+Os motores Clássico e Turbo permitem ouro, Forex e BTC conforme disponibilidade de histórico; o motor Índices suporta WIN/WDO/Nasdaq/S&P500. Use feedSymbol WINZ26/WDOZ26 e só velas do respectivo contrato ao simular B3. Nasdaq exige `^NDX`.
+
+O comando escreve `Storm_Backtest_RealEngines_*.json` com operações fictícias, resultados, treino/validação e causas de bloqueio. Sem calendário/notícias arquivados e verificados, Turbo mantém bloqueios: não converter "AGUARDAR" artificialmente em vitória. Para reprodução integral de score adaptativo histórico, há necessidade adicional de reconstituir memória causal e dados de macro de cada timestamp.
+
+## Testes
+```bash
+node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js
+node tests/copy-trade-smoke.cjs
+node --test tests/v112-smoke.test.js tests/v113-audit.test.js tests/v114-lab.test.js
+```
+
+A documentação anterior permanece abaixo para preservar o histórico de versões.
+
+---
+
 # Storm Códex IA 11.4 — Laboratório de Confiabilidade (16/11/2026)
 
 ## O que foi implementado
