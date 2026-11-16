@@ -69,7 +69,13 @@ function createRuntime(options={}){
    try{fn();}catch(e){errors.push({script:'turbo-bootstrap',message:String(e.message||e)})}
   }
  }
- const required=['SGEngine','SGV6Core','SGV72Core','Vortex83Turbo','Vortex91Core'];
+ // Load the production Precision extension after original inline cores.
+ // Only repository-local trusted source, no remote scripts or broker access.
+ try{
+  const precisionSource=fs.readFileSync(path.join(__dirname,'storm-precision-v112.js'),'utf8');
+  vm.runInContext(precisionSource,sandbox,{filename:'storm-precision-v112.js',timeout:1500});
+ }catch(e){errors.push({script:'precision-v112',message:String(e.message||e).slice(0,240)})}
+ const required=['SGEngine','SGV6Core','SGV72Core','Vortex83Turbo','Vortex91Core','StormPrecision112'];
  const missing=required.filter(k=>!sandbox[k]);
  if(missing.length)throw Error('Motor original indisponível no sandbox: '+missing.join(', ')+'; inicialização: '+JSON.stringify(errors.slice(0,8)));
  function setNow(timeMs){const n=Number(timeMs);
