@@ -6,6 +6,7 @@
 const B3=require('./b3-indices-v111.js');
 const {createRuntime}=require('./storm-runtime-v115.js');
 const replay=require('./storm-replay-v115.js');
+const xauHealth=require('./storm-xau-health-v116.js');
 const TIMEFRAMES={M1:{ms:60000,p:'1m'},M5:{ms:300000,p:'5m'},M15:{ms:900000,p:'15m'},H1:{ms:3600000,p:'1h'}};
 const ASSETS=['XAUUSD','EURUSD','USDJPY','AUDUSD','WIN','WDO'];
 const bounded=s=>String(s??'').slice(0,240);
@@ -131,6 +132,8 @@ async function advance(pair,quote,stored,runtime,otherTf={},macro=null){
  state.lastAttemptAt=now;state.lastSuccessAt=now;state.source=quote.source;
  state.feedSymbol=quote.feedSymbol;state.closedAt=quote.closedAt;
  state.latestStatus=quote.fresh?'RECENT':'STALE';state.error=null;
+ if(!quote.fresh){state.lastScore={classic:{accepted:false,reason:'Candles OHLC atrasados',score:null},
+  turbo:{accepted:false,reason:'Candles OHLC atrasados',score:null}};}
  settlePending(state,quote.bars,pair.tf);
  if(!state.lastClosedAt){
   // First sight of existing candle arms monitoring; NEVER backfill a trade.
@@ -188,7 +191,14 @@ async function macroData(fetcher=fetch){
 async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),runtime=null}={}){
  if(!store||typeof store.getWithMetadata!=='function'||typeof store.setJSON!=='function')
   throw Error('Armazenamento persistente não configurado');
- const results=[],quotes=[],macro=await macroData(fetcher);
+ const results=[],quotes=[];
+ const [macro,xauReference]=await Promise.all([
+  macroData(fetcher),
+  getJson('https://xaus.com/api/v1/spot?compact=1',fetcher,{timeout:4500})
+   .then(data=>xauHealth.spot(data,now))
+   .catch(e=>({fresh:false,price:null,priceType:'spot_reference_only',
+    eligibleForSignals:false,reason:bounded(e?.message||e)}))
+ ]);
  // Poll in parallel, but evaluate sequentially with one isolated historical clock.
  await Promise.all(pairs.map(async pair=>{
   try{quotes.push({pair,quote:await pull(pair,now,fetcher)})}
@@ -214,10 +224,15 @@ async function runCycle({store,fetcher=fetch,now=Date.now(),pairs=activePairs(),
    const write=await store.setJSON(key,next,prior?{onlyIfMatch:etag}:{onlyIfNew:true});
    results.push({asset:pair.asset,tf:pair.tf,state:next.latestStatus,source:next.source,
     error:next.error,count:next.signals.length,lastClosedAt:next.lastClosedAt,
-    persisted:!!write?.modified});
+    persisted:!!write?.modified,readings:next.lastScore||null,
+    pending:next.signals.filter(e=>e.result==='pending').length,
+    closed:next.signals.filter(e=>e.result==='win'||e.result==='loss').length});
   }catch(e){results.push({asset:pair.asset,tf:pair.tf,state:'STORAGE_ERROR',error:bounded(e?.message||e),persisted:false});}
  }
  const status={version:'11.5',checkedAt:now,macroVerified:macro.verified,pairs:results.length,
+  xauReference:{source:xauReference.source||'XAUS.com',fresh:xauReference.fresh===true,
+   price:xauReference.fresh?xauReference.price:null,quotedAt:xauReference.quotedAt||null,
+   ageMs:xauReference.ageMs??null,eligibleForSignals:false},
   healthy:results.filter(x=>x.state==='RECENT').length,
   failed:results.filter(x=>x.state==='ERROR'||x.state==='STORAGE_ERROR').length,
   persisted:results.filter(x=>x.persisted).length,results};
