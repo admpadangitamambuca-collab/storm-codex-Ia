@@ -12,12 +12,27 @@ function createRuntime(options={}){
  const modules=[...source.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
    .map(m=>m[1]).filter(x=>x.trim());
  const inert=()=>{};
- const body={appendChild:inert,removeChild:inert,insertBefore:inert,classList:{add:inert,remove:inert,toggle:inert,contains:()=>false},style:{},dataset:{}};
+ const nodes=new Map(),registered=[];
+ function node(){
+  const n={id:'',hidden:false,style:{},dataset:{},classList:{add:inert,remove:inert,toggle:()=>false,contains:()=>false},
+   setAttribute:inert,removeAttribute:inert,addEventListener:inert,removeEventListener:inert,
+   querySelector:()=>null,querySelectorAll:()=>[],getContext:()=>null,
+   appendChild(child){if(child?.id)nodes.set(child.id,child);return child;},
+   append(child){if(child?.id)nodes.set(child.id,child);},
+   prepend(child){if(child?.id)nodes.set(child.id,child);},
+   after(child){if(child?.id)nodes.set(child.id,child);},
+   before(child){if(child?.id)nodes.set(child.id,child);},
+   remove:inert};
+  return n;
+ }
+ const body=node(),header=node(),tfSwitch=node(),nav=node();
  const document={
    readyState:'loading',hidden:true,body,head:body,documentElement:body,
-   addEventListener:inert,removeEventListener:inert,
-   querySelector:()=>null,querySelectorAll:()=>[],getElementById:()=>null,
-   createElement:()=>({...body,querySelector:()=>null,querySelectorAll:()=>[],setAttribute:inert,remove:inert,addEventListener:inert,getContext:()=>null}),
+   addEventListener:(type,fn)=>{if(type==='DOMContentLoaded')registered.push(fn);},
+   removeEventListener:inert,
+   querySelector:(s)=>s==='.header-right'?header:s==='.tf-switch'?tfSwitch:s==='#v79Nav'?nav:null,
+   querySelectorAll:()=>[],getElementById:(id)=>nodes.get(id)||null,
+   createElement:node
  };
  const store=new Map();
  const ctx={
@@ -46,6 +61,14 @@ function createRuntime(options={}){
    try{vm.runInContext(code,sandbox,{filename:'index-inline-'+i+'.js',timeout:1500});}
    catch(e){errors.push({script:i,message:String(e.message||e).slice(0,240)})}
  });
+ // The Turbo 8.3 bridge initializes after DOMContentLoaded.
+ // Execute ONLY its trusted bootstrap, with inert DOM placeholders; other UI
+ // callbacks remain dormant to prevent timers, network, or automatic trading.
+ for(const fn of registered){
+  if(String(fn).includes('window.Vortex83Turbo={')&&String(fn).includes('contextForCopy')){
+   try{fn();}catch(e){errors.push({script:'turbo-bootstrap',message:String(e.message||e)})}
+  }
+ }
  const required=['SGEngine','SGV6Core','SGV72Core','Vortex83Turbo','Vortex91Core'];
  const missing=required.filter(k=>!sandbox[k]);
  if(missing.length)throw Error('Motor original indisponível no sandbox: '+missing.join(', ')+'; inicialização: '+JSON.stringify(errors.slice(0,8)));
