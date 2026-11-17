@@ -77,5 +77,5 @@ test('packaged monitor declares minute M1 sampling and full 5-minute scan',()=>{
  assert.match(scheduled,/getUTCMinutes\(\)%5===0/);
  assert.match(scheduled,/p\.tf==='M1'/);
  assert.match(index,/storm-xau-live-v116.js/);
- assert.match(index,/Storm Códex IA 11.6/);
+ assert.match(index,/Storm Códex IA 11\.(?:6|7)/);
 });
