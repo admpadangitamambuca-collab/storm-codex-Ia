@@ -200,7 +200,7 @@
   var visible=rows.filter(function(r){return filter==='ALL'||r.asset===filter;});
   if(!visible.length){list.innerHTML='<div class="st-empty"><strong>Nenhum sinal externo importado</strong><span>Abra a arena, confira um sinal ao qual você tem acesso e importe os seus dados. A aba nunca inventa entradas de traders.</span></div>';return;}
   list.innerHTML=visible.map(function(r){
-   var c=activeComparison(r),level=c.status==='CONFLUÊNCIA 2/2'?'match':c.status==='DIVERGÊNCIA'||c.status==='OHLC ATRASADO'?'danger':'neutral';
+   var c=activeComparison(r),level=c.status==='CONFLUÊNCIA 2/2'?'match':/DIVERGÊNCIA|ATRASADO|ANTIGO|ULTRAPASSADO|DISTANTE|R\/R BAIXO/.test(c.status)?'danger':'neutral';
    var side=r.side==='buy'?'COMPRA':'VENDA';
    var url=r.url?'<a class="st-link" target="_blank" rel="noopener noreferrer" href="'+esc(httpsUrl(r.url))+'">Conferir origem ↗</a>':'<span class="st-muted">Sem link de origem</span>';
    return '<article class="st-card" data-record="'+esc(r.id)+'"><div class="st-card-head"><div><small>'+esc(r.source)+' · IMPORTADO MANUALMENTE</small><h3>'+esc(r.trader)+'</h3></div><span class="st-side '+r.side+'">'+side+'</span></div>'+
