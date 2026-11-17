@@ -115,18 +115,18 @@ jobs:
           print('Arquivo distribuido de referencia: '+str(len(required))+' ativos, '+str(len(local))+' scripts HTML')
           PY
           (cd dist/netlify && zip -9 -q -r ../Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip .)
-          unzip -t dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
-          unzip -l dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
+          unzip -t dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
+          unzip -l dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
           name: Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY
-          path: dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
+          path: dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
       - name: Publish direct-download release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=dist/Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY.zip
+          FILE=dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
           if gh release view v11.7-traders >/dev/null 2>&1; then
             gh release upload v11.6-gold "$FILE" --clobber
           else
