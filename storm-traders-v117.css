@@ -1,0 +1,100 @@
+/* Storm Codex IA v11.7 — standalone external-signals terminal */
+#stormTradersBtn{display:inline-flex;align-items:center;gap:7px;border:1px solid #4c6b88;background:linear-gradient(133deg,#233c50,#142333);color:#b5eaff;font-weight:850;letter-spacing:.15px;white-space:nowrap;box-shadow:inset 0 1px 0 #c1ecff19,0 5px 17px #0003}
+#stormTradersBtn .st-nav-icon{font-family:Georgia,serif;width:19px;height:19px;display:grid;place-items:center;line-height:1;color:#c7f3ff;font-size:21px;text-shadow:0 0 14px #61caff68}
+#stormTradersBtn[aria-pressed="true"]{border-color:#8ad8e3;background:linear-gradient(120deg,#356c7e,#173d57);color:#f3ffff;box-shadow:0 0 0 1px #6cd3e940,0 0 22px #52cdf22a}
+#stormTradersBtn:focus-visible{outline:2px solid #a5e9f7;outline-offset:3px}
+body.storm-traders-on .shell > :not(.header):not(#stormTradersPane){display:none!important}
+#stormTradersPane[hidden]{display:none!important}
+#stormTradersPane{display:block;margin:21px 0 37px;color:#e9f3fc;--st-border:#344d65;--st-muted:#a7bbcd;--st-blue:#94e1f3;--st-green:#75e5b3;--st-red:#ff92a1}
+#stormTradersPane *{box-sizing:border-box}
+#stormTradersPane button,#stormTradersPane input,#stormTradersPane select,#stormTradersPane textarea{font:inherit}
+#stormTradersPane button{cursor:pointer}
+#stormTradersPane :is(input,select,textarea):focus-visible,#stormTradersPane button:focus-visible,#stormTradersPane a:focus-visible{outline:2px solid #98ebfa;outline-offset:3px}
+#stormTradersPane h2,#stormTradersPane h3,#stormTradersPane p{margin-top:0}
+#stormTradersPane .st-hero{position:relative;overflow:hidden;padding:25px;border:1px solid #527992;border-radius:21px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:19px;background:radial-gradient(circle at 90% -20%,#4796a943,transparent 44%),linear-gradient(125deg,#1f3549,#101a2b 78%);box-shadow:0 12px 37px #0003}
+#stormTradersPane .st-hero:before{content:"";position:absolute;inset:0 auto auto 8%;width:57%;height:2px;background:linear-gradient(90deg,transparent,#9be9eb 55%,transparent);opacity:.78}
+#stormTradersPane .st-hero-title{display:flex;align-items:center;gap:18px;max-width:810px}
+#stormTradersPane .st-emblem{display:grid;place-items:center;flex:none;width:58px;height:58px;background:linear-gradient(145deg,#31546c,#172f47);border:1px solid #8fdef4;border-radius:17px;color:#b0f8ff;font-family:Georgia,serif;font-size:37px;box-shadow:inset 0 0 18px #8fdfff1e}
+#stormTradersPane .st-hero small,#stormTradersPane .st-section-title small,#stormTradersPane .st-provider-kicker{display:block;font-size:10px;letter-spacing:1.7px;color:#83d0e7;font-weight:850}
+#stormTradersPane .st-hero h2{font-size:clamp(23px,3.2vw,37px);line-height:1.13;letter-spacing:-.8px;margin:7px 0 6px;font-weight:900}
+#stormTradersPane .st-hero h2 span{color:#83e1ed}
+#stormTradersPane .st-hero p{font-size:12px;color:#bfd2e0;line-height:1.65;margin:0;max-width:750px}
+#stormTradersPane .st-origin{display:inline-block;background:#0b2734;border:1px solid #457486;border-radius:999px;padding:9px 13px;font-size:10px;line-height:1.35;color:#bceaf7;font-weight:760;max-width:310px}
+#stormTradersPane .st-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:14px 0}
+#stormTradersPane .st-kpis>div{border:1px solid #344f64;border-radius:14px;background:linear-gradient(150deg,#17293a,#101b2b);padding:17px 18px}
+#stormTradersPane .st-kpis small{color:#9db6c9;letter-spacing:1.2px;font-size:10px;font-weight:800}
+#stormTradersPane .st-kpis strong{display:block;font-size:clamp(23px,2.4vw,31px);margin-top:7px;color:#daedf6;font-weight:900}
+#stormTradersPane .st-kpis>div:last-child strong{font-size:18px;letter-spacing:1px;color:#aadbea}
+#stormTradersPane .st-provider{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:22px;margin-bottom:15px;border-radius:17px;border:1px solid #8e6f496f;background:linear-gradient(130deg,#2d2b29,#192434 67%)}
+#stormTradersPane .st-provider>div:first-child{max-width:750px}
+#stormTradersPane .st-provider-kicker{color:#e4c390}
+#stormTradersPane .st-provider h3{font-size:19px;margin:7px 0}
+#stormTradersPane .st-provider p{font-size:12px;line-height:1.7;color:#c7ced7;margin:0}
+#stormTradersPane .st-provider-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+#stormTradersPane .st-provider-actions a{display:inline-block;text-decoration:none;padding:11px 14px;border-radius:11px;border:1px solid #a98a59;background:#493b2a;color:#f7dfaf;font-weight:850;font-size:12px;white-space:nowrap}
+#stormTradersPane .st-provider-actions a:hover{background:#5e4b34}
+#stormTradersPane .st-columns{display:grid;grid-template-columns:minmax(330px,.88fr) minmax(390px,1.12fr);align-items:start;gap:15px}
+#stormTradersPane .st-editor,#stormTradersPane .st-archive{border:1px solid var(--st-border);border-radius:17px;background:linear-gradient(155deg,#152334,#0e1826);padding:22px;min-width:0}
+#stormTradersPane .st-section-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:13px;margin-bottom:12px}
+#stormTradersPane .st-section-title h3{font-size:20px;font-weight:850;margin:5px 0 0}
+#stormTradersPane .st-hint{font-size:12px;line-height:1.65;color:var(--st-muted);margin:0 0 15px}
+#stormTradersPane .st-editor label,#stormTradersPane .st-filter label{display:block;color:#a9c4d9;font-size:11px;font-weight:750;line-height:1.6}
+#stormTradersPane .st-editor :is(input,select,textarea),#stormTradersPane .st-filter select{display:block;width:100%;border:1px solid #3d566e;background:#0b1725;color:#eaf5ff;border-radius:10px;padding:10px 11px;min-height:39px;margin-top:5px;outline:none}
+#stormTradersPane .st-editor input::placeholder,#stormTradersPane textarea::placeholder{color:#70899c}
+#stormTradersPane textarea{resize:vertical;line-height:1.5;min-height:90px}
+#stormTradersPane .st-editor .st-ghost{margin-top:9px}
+#stormTradersPane .st-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:17px 0 12px}
+#stormTradersPane .st-editor>form>label{display:block;margin:11px 0}
+#stormTradersPane .st-ghost{border:1px solid #457085;background:#193146;color:#bde9f8;border-radius:10px;padding:9px 12px;font-weight:800;font-size:11px}
+#stormTradersPane .st-ghost:hover{background:#26485e}
+#stormTradersPane .st-primary{display:block;width:100%;border:1px solid #a7effa;background:linear-gradient(125deg,#65c9dc,#2c7eaa);color:#0c1f30;padding:12px 16px;border-radius:11px;font-weight:900;font-size:12px;margin:15px 0 0}
+#stormTradersPane .st-primary:hover{filter:brightness(1.07)}
+#stormTradersPane .st-message{border:1px solid #406f65;background:#13332c;color:#9feacc;padding:10px 12px;border-radius:9px;line-height:1.5;font-size:11px;margin:15px 0 0}
+#stormTradersPane .st-message[data-bad="1"]{border-color:#93674c;background:#39291f;color:#f8cf9d}
+#stormTradersPane .st-filter{display:flex;flex-wrap:wrap;gap:11px;align-items:end;margin:13px 0 16px}
+#stormTradersPane .st-filter label{flex:1 1 135px}
+#stormTradersPane .st-filter .st-ghost{flex:none}
+#stormTradersPane .st-card-list{display:grid;gap:12px;max-height:920px;overflow:auto;scrollbar-color:#355b73 #112235}
+#stormTradersPane .st-empty{min-height:180px;border:1px dashed #456178;border-radius:13px;background:#0e1a2b;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:11px;padding:22px;color:#b4c8d9}
+#stormTradersPane .st-empty strong{font-size:15px;color:#f1fbff}
+#stormTradersPane .st-empty span{font-size:12px;line-height:1.65;max-width:390px}
+#stormTradersPane .st-card{padding:16px;border:1px solid #40576b;border-radius:13px;background:#101f2f;box-shadow:0 8px 20px #0002}
+#stormTradersPane .st-card-head{display:flex;align-items:center;justify-content:space-between;gap:11px}
+#stormTradersPane .st-card-head small{font-size:9px;letter-spacing:1px;color:#8ea9bc;font-weight:800}
+#stormTradersPane .st-card-head h3{font-size:16px;margin:6px 0 0;overflow-wrap:anywhere}
+#stormTradersPane .st-side{padding:7px 9px;font-size:10px;border-radius:9px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
+#stormTradersPane .st-side.buy{color:#80e9bd;background:#133d33;border:1px solid #3e8b72}
+#stormTradersPane .st-side.sell{color:#ffa5b0;background:#45212e;border:1px solid #8c435d}
+#stormTradersPane .st-card-meta{font-size:10px;line-height:1.7;color:#97aec2;padding:10px 0}
+#stormTradersPane .st-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#stormTradersPane .st-levels>div{background:#0c1624;padding:11px 7px;border:1px solid #2a4056;border-radius:9px;min-width:0}
+#stormTradersPane .st-levels small{display:block;font-size:9px;letter-spacing:.7px;color:#859eb5}
+#stormTradersPane .st-levels b{display:block;margin-top:7px;font-size:clamp(12px,1.2vw,15px);color:#f0f6fc;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#stormTradersPane .st-compare{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 0;color:#b9cfdd;font-size:11px}
+#stormTradersPane .st-state{font-size:9px;letter-spacing:.5px;border-radius:9px;border:1px solid #607486;padding:6px 8px;font-weight:900;color:#cee1eb}
+#stormTradersPane .st-state.match{color:#95edc2;border-color:#386f56;background:#123525}
+#stormTradersPane .st-state.danger{color:#ffc1c7;border-color:#9b5362;background:#3d2232}
+#stormTradersPane .st-reason{font-size:11px;line-height:1.6;color:#9bb1c3;margin:0 0 10px}
+#stormTradersPane .st-card-foot{display:flex;align-items:center;flex-wrap:wrap;gap:9px;font-size:10px;color:#90a8bd;border-top:1px solid #253e52;padding-top:10px}
+#stormTradersPane .st-card-foot .st-link{color:#9de7f4;text-decoration:underline}
+#stormTradersPane .st-card-foot .st-remove{margin-left:auto;border:1px solid #634659;color:#e1a6b5;background:#30202e;border-radius:8px;padding:5px 8px;font-size:10px}
+#stormTradersPane .st-disclaimer{font-size:11px;color:#9eb0c2;line-height:1.7;margin:17px 0 0}
+#stormTradersPane .st-status-chip{border:1px solid #52717d;background:#213c49;color:#b6edee;padding:7px 10px;border-radius:999px;font-size:10px;font-weight:760}
+@media(max-width:1050px){#stormTradersPane .st-columns{grid-template-columns:1fr}}
+@media(max-width:730px){
+ #stormTradersPane{margin:13px 0 23px}
+ #stormTradersPane .st-hero{padding:18px}
+ #stormTradersPane .st-hero-title{align-items:flex-start;gap:12px}
+ #stormTradersPane .st-emblem{width:43px;height:43px;font-size:28px;border-radius:13px}
+ #stormTradersPane .st-hero h2{font-size:24px}
+ #stormTradersPane .st-kpis{gap:8px}
+ #stormTradersPane .st-kpis>div{padding:12px 9px}
+ #stormTradersPane .st-kpis small{font-size:9px;letter-spacing:.4px}
+ #stormTradersPane .st-kpis strong{font-size:21px}
+ #stormTradersPane .st-kpis>div:last-child strong{font-size:12px}
+ #stormTradersPane .st-editor,#stormTradersPane .st-archive{padding:15px}
+ #stormTradersPane .st-levels{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #stormTradersPane .st-form-grid{gap:8px}
+}
+@media(max-width:390px){#stormTradersPane .st-form-grid{grid-template-columns:1fr}#stormTradersPane .st-card-head{align-items:flex-start}#stormTradersBtn{padding:7px}}
+@media(prefers-reduced-motion:reduce){#stormTradersPane *,#stormTradersBtn{scroll-behavior:auto!important;transition:none!important}}
