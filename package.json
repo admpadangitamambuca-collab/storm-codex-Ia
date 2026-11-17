@@ -1,8 +1,8 @@
 {
   "name": "storm-codex-ia",
-  "version": "11.6.0",
+  "version": "11.7.0",
   "private": true,
-  "description": "Storm Codex IA 11.6 - live spot reference, one-minute M1 cloud monitor and safe Netlify Functions",
+  "description": "Storm Codex IA 11.7 - independent Traders Intelligence, safely imported external signals and verified XAU checks",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -10,6 +10,6 @@
     "@netlify/blobs": "11.1.9"
   },
   "scripts": {
-    "test": "node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js tests/v116-xau.test.js"
+    "test": "node --test tests/v115-runtime.test.js tests/v115-replay.test.js tests/v115-monitor.test.js tests/v116-xau.test.js tests/v117-traders.test.cjs"
   }
 }
