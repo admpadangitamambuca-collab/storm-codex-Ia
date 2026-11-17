@@ -119,7 +119,7 @@ jobs:
           unzip -l dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Storm_Codex_IA_v11_6_GOLD_LIVE_MONITOR_NETLIFY
+          name: Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY
           path: dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
       - name: Publish direct-download release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -128,9 +128,9 @@ jobs:
         run: |
           FILE=dist/Storm_Codex_IA_v11_7_TRADERS_INTELLIGENCE_NETLIFY.zip
           if gh release view v11.7-traders >/dev/null 2>&1; then
-            gh release upload v11.6-gold "$FILE" --clobber
+            gh release upload v11.7-traders "$FILE" --clobber
           else
-            gh release create v11.6-gold "$FILE" --target "$GITHUB_SHA" \
+            gh release create v11.7-traders "$FILE" --target "$GITHUB_SHA" \
               --title "Storm Codex IA 11.7 - Traders Intelligence, ouro e monitor" \
               --notes "Adiciona aba Traders com importacao manual autorizada de sinais externos, comparacao Clássico/Turbo, bloqueio por OHLC atrasado e indicadores nao auditados claramente identificados. Sem API oficial Global Traders Hub e sem acesso a dados pagos. Mantem monitor Netlify+Blobs, replay e fontes anteriores; sem garantia de retorno."
           fi
