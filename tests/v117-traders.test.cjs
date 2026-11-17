@@ -25,6 +25,8 @@ test('manual imports reject wrong-side stop and target', () => {
  assert.match(api.validate(a).error,/stop/i);
  a.stop='4190';a.tp1='4180';
  assert.match(api.validate(a).error,/alvo/i);
+ a.tp1='4220';a.tp2='4210';
+ assert.match(api.validate(a).error,/alvo/i);
 });
 test('valid import is persisted only as non-audited manually imported data', () => {
  const x=api.validate({trader:'Trader teste',source:'Global Traders Hub',asset:'XAUUSD',
@@ -38,20 +40,24 @@ test('malicious URL schemes are rejected', () => {
  assert.match(x.error,/https?:\/\//);
 });
 test('XAU comparison never promotes stale OHLC to verified confluence', () => {
- const now=Date.now(),signal={asset:'XAUUSD',side:'buy'};
+ const now=Date.now(),signal={asset:'XAUUSD',side:'buy',entry:4200,stop:4190,targets:[4220],rr:2,publishedAt:now-20000};
  const snap={asset:'XAUUSD',tf:'M5',lagging:false,state:{
-  mode:'live',providerStale:true,closedAt:now-20000,classicAnalysis:{side:'buy'}}};
- const turbo={data:{asset:'XAUUSD',tf:'M5'},plan:{side:'buy',score:89,hasData:true,closedAt:now-20000}};
+  mode:'live',providerStale:true,closedAt:now-20000,classicAnalysis:{side:'buy'},candles:[{close:4201}]}};
+ const turbo={data:{asset:'XAUUSD',tf:'M5'},plan:{side:'buy',score:89,ready:true,hasData:true,closedAt:now-20000}};
  const c=api.engineComparison(signal,snap,turbo,now);
  assert.equal(c.status,'OHLC ATRASADO');assert.equal(c.score,null);
 });
 test('only independent fresh engine readings create dual agreement', () => {
- const now=Date.now(),signal={asset:'XAUUSD',side:'buy'};
+ const now=Date.now(),signal={asset:'XAUUSD',side:'buy',entry:4200,stop:4190,targets:[4220],rr:2,publishedAt:now-20000};
  const snap={asset:'XAUUSD',tf:'M5',lagging:false,state:{
   mode:'live',providerStale:false,closedAt:now-20000,classicAnalysis:{side:'buy'}}};
- const turbo={data:{asset:'XAUUSD',tf:'M5'},plan:{side:'buy',score:87,hasData:true,closedAt:now-20000}};
+ const turbo={data:{asset:'XAUUSD',tf:'M5'},plan:{side:'buy',score:87,ready:true,hasData:true,closedAt:now-20000}};
  assert.equal(api.engineComparison(signal,snap,turbo,now).status,'CONFLUÊNCIA 2/2');
  assert.equal(api.engineComparison({...signal,side:'sell'},snap,turbo,now).status,'DIVERGÊNCIA');
+ assert.equal(api.engineComparison({...signal,publishedAt:null},snap,turbo,now).status,'SEM HORÁRIO DE ORIGEM');
+ assert.equal(api.engineComparison({...signal,publishedAt:now-3600000},snap,turbo,now).status,'SINAL ANTIGO');
+ assert.equal(api.engineComparison({...signal,rr:0.9},snap,turbo,now).status,'R/R BAIXO');
+ assert.equal(api.engineComparison(signal,snap,{...turbo,plan:{...turbo.plan,ready:false}},now).status,'CONFLUÊNCIA 1/2');
 });
 test('new UI assets are present in main HTML; no auto-trading or fake external feed', () => {
  const base=path.resolve(__dirname,'..');
