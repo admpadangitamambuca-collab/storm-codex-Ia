@@ -47,7 +47,7 @@
   var asset=m?normalizeAsset(m[1]):'';
   var sd=upper.match(/\b(BUY|COMPRA|LONG|SELL|VENDA|SHORT)\b/);
   var side=sd?normalizeSide(sd[1]):'';
-  var num='(\d[\d.,]*)';
+  var num='(\\d[\\d.,]*)';
   function capture(re){var hit=upper.match(re);return hit?number(hit[1]):NaN;}
   var entry=capture(new RegExp('(?:ENTRY|ENTRADA|PRICE|PREÇO|PRECO|@)\\s*[:=\\-]?\\s*'+num,'i'));
   if(!Number.isFinite(entry))entry=capture(new RegExp('\\b(?:BUY|COMPRA|LONG|SELL|VENDA|SHORT)\\b\\s*[:@\\-]?\\s*'+num,'i'));
@@ -147,7 +147,7 @@
     Math.abs((i.publishedAt||i.importedAt)-(r.publishedAt||r.importedAt))<3600000;});
   if(duplicate){setMessage('Sinal semelhante já importado há menos de uma hora.',true);return;}
   rows.unshift(r);rows=rows.slice(0,200);persist();setMessage('Sinal registrado localmente. Origem não auditada — confira no provedor antes de operar.',false);
-  $('stormTPaste').value='';$('stormTEntry').value='';$('stormTStop').value='';
+  $('stormTradersPaste').value='';$('stormTEntry').value='';$('stormTStop').value='';
   $('stormTTP1').value='';$('stormTTP2').value='';$('stormTTP3').value='';
   paint();
  }
