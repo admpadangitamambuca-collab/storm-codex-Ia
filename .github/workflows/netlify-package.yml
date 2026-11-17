@@ -26,6 +26,7 @@ on:
       - tests/**
       - tools/**
       - README.md
+      - README_V117_TRADERS.md
       - .github/workflows/netlify-package.yml
   pull_request:
   workflow_dispatch:
@@ -67,7 +68,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/netlify/netlify/functions dist/netlify/tools
-          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-xau-live-v116.js storm-xau-health-v116.js storm-traders-v117.js storm-traders-v117.css storm-runtime-v115.js storm-replay-v115.js storm-monitor-core-v115.js package.json netlify.toml README.md dist/netlify/
+          cp index.html sw.js learning-v108.js b3-indices-v111.js storm-nasdaq-v112.js storm-precision-v112.js storm-b3-quote-v113.js storm-lab-v114.js storm-lab-v114.css storm-monitor-status-v115.js storm-xau-live-v116.js storm-xau-health-v116.js storm-traders-v117.js storm-traders-v117.css storm-runtime-v115.js storm-replay-v115.js storm-monitor-core-v115.js package.json netlify.toml README.md README_V117_TRADERS.md dist/netlify/
           cp netlify/functions/nasdaq-ohlc.js netlify/functions/b3-quote.js netlify/functions/b3-live-ohlc.js netlify/functions/storm-monitor-scheduled.mjs netlify/functions/storm-status.mjs netlify/functions/xau-health.mjs dist/netlify/netlify/functions/
           cp tools/replay-v115.cjs tools/live-feed-probe-v115.cjs tools/probe-xau-v116.cjs dist/netlify/tools/
           cat > dist/netlify/LEIA_ME.txt <<'EOF'
@@ -100,7 +101,7 @@ jobs:
           'storm-nasdaq-v112.js','storm-precision-v112.js','storm-b3-quote-v113.js',
           'storm-lab-v114.js','storm-lab-v114.css','storm-monitor-status-v115.js',
           'storm-runtime-v115.js','storm-replay-v115.js','storm-monitor-core-v115.js',
-          'storm-xau-live-v116.js','storm-xau-health-v116.js','storm-traders-v117.js','storm-traders-v117.css','package.json','netlify.toml','README.md',
+          'storm-xau-live-v116.js','storm-xau-health-v116.js','storm-traders-v117.js','storm-traders-v117.css','package.json','netlify.toml','README.md','README_V117_TRADERS.md',
           'netlify/functions/nasdaq-ohlc.js','netlify/functions/b3-quote.js',
           'netlify/functions/b3-live-ohlc.js','netlify/functions/storm-monitor-scheduled.mjs',
           'netlify/functions/storm-status.mjs','netlify/functions/xau-health.mjs',
