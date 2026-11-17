@@ -81,7 +81,13 @@
   var r=(target-entry)*dir/Math.abs(entry-stop);
   if(!Number.isFinite(r)||r<=0)return {error:'Risco/retorno inválido.'};
   var targets=[target];
-  ['tp2','tp3'].forEach(function(k){if(String(x[k]||'').trim()){var p=number(x[k]);if(Number.isFinite(p)&&dir*(p-entry)>0)targets.push(p);}});
+  for(var k of ['tp2','tp3']){
+   if(!String(x[k]||'').trim())continue;
+   var p=number(x[k]);
+   if(!Number.isFinite(p)||p<=0||dir*(p-targets[targets.length-1])<=0)
+    return {error:'Cada alvo adicional precisa ser válido e mais distante que o anterior.'};
+   targets.push(p);
+  }
   if(url&&!httpsUrl(url))return {error:'O link da fonte deve começar com https:// ou http://.'};
   var published=publishedAt?Date.parse(publishedAt):null;
   if(publishedAt&&(!Number.isFinite(published)||published>Date.now()+60000))return {error:'Horário de publicação inválido ou no futuro.'};
@@ -116,13 +122,41 @@
   var turboFresh=turboPlan&&turboPlan.hasData&&Number.isFinite(turboPlan.closedAt)&&
     Math.abs(turboPlan.closedAt-state.closedAt)<1000;
   var turboSide=turboFresh?normalizeSide(turboPlan.side):'';
-  result.classic=classicSide?(classicSide===record.side?'ALINHADO':'CONTRÁRIO'):'AGUARDAR';
-  result.turbo=turboSide?(turboSide===record.side?'ALINHADO':'CONTRÁRIO'):'SEM TURBO RECENTE';
-  result.score=Number.isFinite(turboPlan&&turboPlan.score)&&turboFresh?turboPlan.score:null;
-  var aligned=[classicSide,turboSide].filter(function(s){return s&&s===record.side;}).length;
-  var contrary=[classicSide,turboSide].filter(function(s){return s&&s!==record.side;}).length;
+  var classicEligible=!!classicSide&&classical.quality!=='EVITAR'&&!classical.preliminary&&
+    !(classical.v93&&classical.v93.operational===false);
+  var turboEligible=!!turboSide&&turboFresh&&turboPlan.ready===true;
+  result.classic=classicSide?(classicEligible?(classicSide===record.side?'ALINHADO':'CONTRÁRIO'):'BLOQUEADO'):'AGUARDAR';
+  result.turbo=turboSide?(turboEligible?(turboSide===record.side?'ALINHADO':'CONTRÁRIO'):'BLOQUEADO'):'SEM TURBO RECENTE';
+  result.score=Number.isFinite(turboPlan&&turboPlan.score)&&turboEligible?turboPlan.score:null;
+  var accepted=[classicEligible?classicSide:'',turboEligible?turboSide:''];
+  var aligned=accepted.filter(function(s){return s&&s===record.side;}).length;
+  var contrary=accepted.filter(function(s){return s&&s!==record.side;}).length;
   result.status=contrary?'DIVERGÊNCIA':aligned===2?'CONFLUÊNCIA 2/2':aligned===1?'CONFLUÊNCIA 1/2':'SEM CONFIRMAÇÃO';
-  result.reason='Comparação técnica, não auditoria do sinal externo. '+tf+' fechado; a nota dos motores não é probabilidade.';
+  result.reason='Comparação técnica, não auditoria do sinal externo. '+tf+' fechado; a nota não é probabilidade.';
+  var publication=Number(record.publishedAt),maxSignalAge=Math.max(900000,ms*6);
+  if(!Number.isFinite(publication)||publication<=0){
+   result.status='SEM HORÁRIO DE ORIGEM';
+   result.reason='Data/hora do sinal externo não informada; direção técnica exibida apenas para estudo.';
+  }else if((now||Date.now())-publication>maxSignalAge||(now||Date.now())<publication){
+   result.status='SINAL ANTIGO';
+   result.reason='Publicação fora da janela conservadora de '+tf+'. Não use confluência atual como confirmação da entrada antiga.';
+  }
+  var latest=state.candles&&state.candles.length?Number(state.candles[state.candles.length-1].close):NaN;
+  if(Number.isFinite(latest)&&Number.isFinite(record.entry)&&Number.isFinite(record.stop)&&
+    Number.isFinite(record.targets&&record.targets[0])){
+   var dir=record.side==='buy'?1:-1;
+   if(dir*(latest-record.stop)<=0||dir*(latest-record.targets[0])>=0){
+    result.status='NÍVEL ULTRAPASSADO';
+    result.reason='Preço da última vela além do stop ou primeiro alvo informado. Necessária nova avaliação; resultado do sinal não verificado.';
+   }else if(Math.abs(latest-record.entry)>Math.abs(record.entry-record.stop)*0.65){
+    result.status='ENTRADA DISTANTE';
+    result.reason='Preço da última vela distante da entrada externa mais de 0,65R. Não perseguir o movimento.';
+   }
+  }
+  if(record.rr>0&&record.rr<1.2&&result.status.startsWith('CONFLUÊNCIA')){
+   result.status='R/R BAIXO';
+   result.reason='Primeiro alvo com risco/retorno menor que 1,2. Direção coincidente não resolve o risco.';
+  }
   return result;
  }
  function setMessage(s,bad){var el=$('stormTradersMessage');if(el){el.textContent=s;el.dataset.bad=bad?'1':'0';}}
